@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -21,6 +21,8 @@ model User {
   addresse          Address?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
+
+  @@map("users")
 }
 
 model Address {
@@ -36,4 +38,6 @@ model Address {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
+
+  @@map("addresses")
 }
