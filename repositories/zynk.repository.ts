@@ -40,6 +40,18 @@ interface ZynkErrorResponse {
 }
 
 class ZynkRepository {
+  async checkEmailExists(email: string): Promise<boolean> {
+    try {
+      await zynkClient.get(`/api/v1/transformer/entity/email/${email}`);
+      return true; // 200 response means email exists
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 404) {
+        return false; // 404 means email not found
+      }
+      throw new Error(500, "Failed to check email with Zynk ");
+    }
+  }
+
   async createEntity(data: ZynkEntityData): Promise<ZynkEntityResponse> {
     try {
       const response = await zynkClient.post<ZynkEntityResponse>(
@@ -57,10 +69,7 @@ class ZynkRepository {
           throw new Error(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
-          error.response.status,
-          "Zynk API request failed"
-        );
+        throw new Error(error.response.status, "API request failed");
       }
 
       throw new Error(500, "Failed to connect to Zynk API");
