@@ -1,4 +1,5 @@
 import Error from "../lib/Error";
+import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import zynkRepository from "../repositories/zynk.repository";
 import type { ZynkEntityData } from "../repositories/zynk.repository";
@@ -73,6 +74,58 @@ class ZynkService {
     }
 
     const response = await zynkRepository.getKycStatus(user.zynkEntityId);
+
+    return response.data;
+  }
+
+  async createFundingAccount(userId: number) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error(404, "User not found");
+    }
+
+    if (!user.zynkEntityId) {
+      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+    }
+
+    if (user.zynkFundingAccountId) {
+      throw new Error(409, "User already has a funding account");
+    }
+
+    const response = await zynkRepository.createFundingAccount(user.zynkEntityId);
+
+    const updatedUser = await prismaClient.$transaction(async (tx) => {
+      return tx.user.update({
+        where: { id: userId },
+        data: { zynkFundingAccountId: response.data.data.id },
+        include: { address: true },
+      });
+    });
+
+    return {
+      user: updatedUser,
+      fundingAccount: response.data.data,
+    };
+  }
+
+  async getFundingAccount(userId: number) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error(404, "User not found");
+    }
+
+    if (!user.zynkEntityId) {
+      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+    }
+
+    if (!user.zynkFundingAccountId) {
+      throw new Error(400, "User does not have a funding account. Create funding account first.");
+    }
+
+    const response = await zynkRepository.getFundingAccount(
+      user.zynkEntityId,
+      user.zynkFundingAccountId
+    );
 
     return response.data;
   }

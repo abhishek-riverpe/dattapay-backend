@@ -64,6 +64,46 @@ class ZynkController {
       next(error);
     }
   }
+
+  async createFundingAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { error, value } = userIdParamSchema.validate(
+        { id: Number(req.params.userId) },
+        { abortEarly: false }
+      );
+
+      if (error) {
+        throw new Error(400, error.details.map((d) => d.message).join(", "));
+      }
+
+      const result = await zynkService.createFundingAccount(value.id);
+      res
+        .status(201)
+        .json(new APIResponse(true, "Funding account created successfully", result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getFundingAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { error, value } = userIdParamSchema.validate(
+        { id: Number(req.params.userId) },
+        { abortEarly: false }
+      );
+
+      if (error) {
+        throw new Error(400, error.details.map((d) => d.message).join(", "));
+      }
+
+      const fundingAccount = await zynkService.getFundingAccount(value.id);
+      res
+        .status(200)
+        .json(new APIResponse(true, "Funding account retrieved successfully", fundingAccount));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new ZynkController();

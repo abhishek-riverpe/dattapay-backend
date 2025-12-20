@@ -1,6 +1,6 @@
 import Error from "../lib/Error";
 import userRepository from "../repositories/user.repository";
-import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
+import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 
 class UserService {
   async getAll() {

@@ -89,6 +89,38 @@ interface ZynkKycStatusResponse {
   };
 }
 
+interface ZynkFundingAccountData {
+  id: string;
+  entityId: string;
+  jurisdictionId: string;
+  providerId: string;
+  status: string;
+  accountInfo: {
+    currency: string;
+    bank_name: string;
+    bank_address: string;
+    bank_routing_number: string;
+    bank_account_number: string;
+    bank_beneficiary_name: string;
+    bank_beneficiary_address: string;
+    payment_rail: string;
+    payment_rails: string[];
+  };
+}
+
+interface ZynkCreateFundingAccountResponse {
+  success: boolean;
+  data: {
+    message: string;
+    data: ZynkFundingAccountData;
+  };
+}
+
+interface ZynkGetFundingAccountResponse {
+  success: boolean;
+  data: ZynkFundingAccountData;
+}
+
 class ZynkRepository {
   async checkEmailExists(email: string): Promise<boolean> {
     try {
@@ -181,7 +213,72 @@ class ZynkRepository {
       throw new Error(500, "Failed to connect to Zynk API");
     }
   }
+
+  async createFundingAccount(
+    entityId: string
+  ): Promise<ZynkCreateFundingAccountResponse> {
+    const jurisdictionId = process.env.ZYNK_JURISDICTION_ID;
+
+    if (!jurisdictionId) {
+      throw new Error(500, "ZYNK_JURISDICTION_ID is not configured");
+    }
+
+    try {
+      const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
+        `/api/v1/transformer/accounts/${entityId}/create/funding_account/${jurisdictionId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const zynkError = error.response.data as ZynkErrorResponse;
+
+        if (zynkError?.error) {
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
+          throw new Error(zynkError.error.code, errorMessage);
+        }
+
+        throw new Error(error.response.status, "Failed to create funding account");
+      }
+
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
+
+  async getFundingAccount(
+    entityId: string,
+    accountId: string
+  ): Promise<ZynkGetFundingAccountResponse> {
+    try {
+      const response = await zynkClient.get<ZynkGetFundingAccountResponse>(
+        `/api/v1/transformer/accounts/${entityId}/funding_account/${accountId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const zynkError = error.response.data as ZynkErrorResponse;
+
+        if (zynkError?.error) {
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
+          throw new Error(zynkError.error.code, errorMessage);
+        }
+
+        throw new Error(error.response.status, "Failed to get funding account");
+      }
+
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
 }
 
 export default new ZynkRepository();
-export type { ZynkEntityData, ZynkEntityResponse, ZynkKycResponse, ZynkKycStatusResponse };
+export type {
+  ZynkEntityData,
+  ZynkEntityResponse,
+  ZynkKycResponse,
+  ZynkKycStatusResponse,
+  ZynkFundingAccountData,
+  ZynkCreateFundingAccountResponse,
+  ZynkGetFundingAccountResponse,
+};

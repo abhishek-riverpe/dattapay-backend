@@ -1,7 +1,7 @@
 import Error from "../lib/Error";
 import addressRepository from "../repositories/address.repository";
 import userRepository from "../repositories/user.repository";
-import {
+import type {
   CreateAddressInput,
   UpdateAddressInput,
 } from "../schemas/address.schema";

@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  firstName         String
-  clerkUserId       String
-  zynkEntityId      String?
-  lastName          String
-  email             String   @unique
-  phoneNumberPrefix String
-  phoneNumber       String
-  nationality       String
-  dateOfBirth       DateTime
-  address           Address?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  firstName            String
+  clerkUserId          String
+  zynkEntityId         String?
+  zynkFundingAccountId String?
+  lastName             String
+  email                String   @unique
+  phoneNumberPrefix    String
+  phoneNumber          String
+  nationality          String
+  dateOfBirth          DateTime
+  address              Address?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
 
   @@map("users")
 }

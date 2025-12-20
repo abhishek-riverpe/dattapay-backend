@@ -499,6 +499,54 @@
             },
             "description": "Gets the KYC status for the specified user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
           }
+        },
+        {
+          "name": "Create Funding Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/funding-account/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "funding-account", "1"]
+            },
+            "description": "Creates a funding account for the specified user. The user must have a Zynk entity and must not already have a funding account. Returns user data with zynkFundingAccountId and funding account details."
+          }
+        },
+        {
+          "name": "Get Funding Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/funding-account/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "funding-account", "1"]
+            },
+            "description": "Gets the funding account details for the specified user. The user must have a Zynk entity and a funding account. Returns bank account information including currency, bank name, routing number, account number, beneficiary details, and payment rails."
+          }
         }
       ]
     }
