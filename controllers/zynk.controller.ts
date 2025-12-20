@@ -44,6 +44,26 @@ class ZynkController {
       next(error);
     }
   }
+
+  async getKycStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { error, value } = userIdParamSchema.validate(
+        { id: Number(req.params.userId) },
+        { abortEarly: false }
+      );
+
+      if (error) {
+        throw new Error(400, error.details.map((d) => d.message).join(", "));
+      }
+
+      const kycStatus = await zynkService.getKycStatus(value.id);
+      res
+        .status(200)
+        .json(new APIResponse(true, "KYC status retrieved successfully", kycStatus));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new ZynkController();

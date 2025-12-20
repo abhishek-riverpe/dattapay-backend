@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.post("/entities/:userId", zynkController.createEntity);
 router.post("/kyc/:userId", zynkController.startKyc);
+router.get("/kyc/status/:userId", zynkController.getKycStatus);
 
 export default router;

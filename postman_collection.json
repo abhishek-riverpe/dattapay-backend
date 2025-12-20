@@ -475,6 +475,30 @@
             },
             "description": "Starts KYC verification for the specified user. The user must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
           }
+        },
+        {
+          "name": "Get KYC Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/kyc/status/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "kyc", "status", "1"]
+            },
+            "description": "Gets the KYC status for the specified user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
+          }
         }
       ]
     }
