@@ -238,7 +238,10 @@ class ZynkRepository {
           throw new Error(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to create funding account");
+        throw new Error(
+          error.response.status,
+          "Failed to create funding account"
+        );
       }
 
       throw new Error(500, "Failed to connect to Zynk API");
@@ -290,7 +293,10 @@ class ZynkRepository {
           throw new Error(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to activate funding account");
+        throw new Error(
+          error.response.status,
+          "Failed to activate funding account"
+        );
       }
 
       throw new Error(500, "Failed to connect to Zynk API");
@@ -316,7 +322,10 @@ class ZynkRepository {
           throw new Error(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to deactivate funding account");
+        throw new Error(
+          error.response.status,
+          "Failed to deactivate funding account"
+        );
       }
 
       throw new Error(500, "Failed to connect to Zynk API");

@@ -46,7 +46,8 @@
               "raw": "{{baseUrl}}/users",
               "host": ["{{baseUrl}}"],
               "path": ["users"]
-            }
+            },
+            "description": "Retrieves all users from the database."
           }
         },
         {
@@ -69,7 +70,8 @@
               "raw": "{{baseUrl}}/users/1",
               "host": ["{{baseUrl}}"],
               "path": ["users", "1"]
-            }
+            },
+            "description": "Retrieves a user by their ID."
           }
         },
         {
@@ -89,10 +91,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/email/michael.chen@email.com",
+              "raw": "{{baseUrl}}/users/email/john.doe@email.com",
               "host": ["{{baseUrl}}"],
-              "path": ["users", "email", "michael.chen@email.com"]
-            }
+              "path": ["users", "email", "john.doe@email.com"]
+            },
+            "description": "Retrieves a user by their email address."
           }
         },
         {
@@ -115,7 +118,8 @@
               "raw": "{{baseUrl}}/users/clerk/user_2xYz8KmNpQrStUvWx",
               "host": ["{{baseUrl}}"],
               "path": ["users", "clerk", "user_2xYz8KmNpQrStUvWx"]
-            }
+            },
+            "description": "Retrieves a user by their Clerk user ID."
           }
         },
         {
@@ -141,13 +145,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clerkUserId\": \"user_2xYz8KmNpQrStUvWx\",\n  \"firstName\": \"Michael\",\n  \"lastName\": \"Chen\",\n  \"email\": \"michael.chen@email.com\",\n  \"phoneNumberPrefix\": \"1\",\n  \"phoneNumber\": \"4155551234\",\n  \"nationality\": \"US\",\n  \"dateOfBirth\": \"1992-03-15\"\n}"
+              "raw": "{\n  \"clerkUserId\": \"user_2xYz8KmNpQrStUvWx\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@email.com\",\n  \"phoneNumberPrefix\": \"1\",\n  \"phoneNumber\": \"4155551234\",\n  \"nationality\": \"US\",\n  \"dateOfBirth\": \"1990-05-15\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
               "host": ["{{baseUrl}}"],
               "path": ["users"]
-            }
+            },
+            "description": "Creates a new user. Email is validated against Zynk to prevent duplicates."
           }
         },
         {
@@ -173,13 +178,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Mike\",\n  \"phoneNumber\": \"4155559876\",\n  \"nationality\": \"US\"\n}"
+              "raw": "{\n  \"firstName\": \"Johnny\",\n  \"phoneNumber\": \"4155559876\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/1",
               "host": ["{{baseUrl}}"],
               "path": ["users", "1"]
-            }
+            },
+            "description": "Updates an existing user by ID."
           }
         },
         {
@@ -202,7 +208,8 @@
               "raw": "{{baseUrl}}/users/1",
               "host": ["{{baseUrl}}"],
               "path": ["users", "1"]
-            }
+            },
+            "description": "Deletes a user by ID. Also deletes associated address."
           }
         }
       ]
@@ -231,7 +238,8 @@
               "raw": "{{baseUrl}}/addresses",
               "host": ["{{baseUrl}}"],
               "path": ["addresses"]
-            }
+            },
+            "description": "Retrieves all addresses from the database."
           }
         },
         {
@@ -254,7 +262,8 @@
               "raw": "{{baseUrl}}/addresses/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "1"]
-            }
+            },
+            "description": "Retrieves an address by its ID."
           }
         },
         {
@@ -277,7 +286,8 @@
               "raw": "{{baseUrl}}/addresses/user/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "user", "1"]
-            }
+            },
+            "description": "Retrieves an address by the user ID."
           }
         },
         {
@@ -303,13 +313,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"addressLine1\": \"742 Evergreen Terrace\",\n  \"addressLine2\": \"Apt 2B\",\n  \"locality\": \"Mission District\",\n  \"city\": \"San Francisco\",\n  \"state\": \"CA\",\n  \"country\": \"US\",\n  \"postalCode\": \"94110\",\n  \"userId\": 1\n}"
+              "raw": "{\n  \"addressLine1\": \"123 Main Street\",\n  \"addressLine2\": \"Apt 4B\",\n  \"locality\": \"Downtown\",\n  \"city\": \"San Francisco\",\n  \"state\": \"CA\",\n  \"country\": \"US\",\n  \"postalCode\": \"94102\",\n  \"userId\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/addresses",
               "host": ["{{baseUrl}}"],
               "path": ["addresses"]
-            }
+            },
+            "description": "Creates a new address for a user. Each user can only have one address."
           }
         },
         {
@@ -335,13 +346,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"addressLine1\": \"350 Fifth Avenue\",\n  \"addressLine2\": \"Floor 34\",\n  \"locality\": \"Midtown Manhattan\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"country\": \"US\",\n  \"postalCode\": \"10118\"\n}"
+              "raw": "{\n  \"addressLine1\": \"456 Oak Avenue\",\n  \"city\": \"Los Angeles\",\n  \"state\": \"CA\",\n  \"postalCode\": \"90001\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/addresses/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "1"]
-            }
+            },
+            "description": "Updates an address by its ID."
           }
         },
         {
@@ -367,13 +379,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"addressLine1\": \"1600 Amphitheatre Parkway\",\n  \"locality\": \"Mountain View\",\n  \"city\": \"Mountain View\",\n  \"state\": \"CA\",\n  \"country\": \"US\",\n  \"postalCode\": \"94043\"\n}"
+              "raw": "{\n  \"addressLine1\": \"789 Pine Street\",\n  \"locality\": \"Midtown\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"postalCode\": \"10001\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/addresses/user/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "user", "1"]
-            }
+            },
+            "description": "Updates an address by the user ID."
           }
         },
         {
@@ -396,7 +409,8 @@
               "raw": "{{baseUrl}}/addresses/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "1"]
-            }
+            },
+            "description": "Deletes an address by its ID."
           }
         },
         {
@@ -419,14 +433,15 @@
               "raw": "{{baseUrl}}/addresses/user/1",
               "host": ["{{baseUrl}}"],
               "path": ["addresses", "user", "1"]
-            }
+            },
+            "description": "Deletes an address by the user ID."
           }
         }
       ]
     },
     {
       "name": "Zynk",
-      "description": "Zynk entity management endpoints",
+      "description": "Zynk integration endpoints for entity management, KYC, and funding accounts",
       "item": [
         {
           "name": "Create Zynk Entity",
@@ -449,7 +464,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "entities", "1"]
             },
-            "description": "Creates a Zynk entity for the specified user. The user must have an address and must not already have a Zynk entity."
+            "description": "Creates a Zynk entity for a user. User must have an address and must not already have a Zynk entity."
           }
         },
         {
@@ -473,7 +488,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "kyc", "1"]
             },
-            "description": "Starts KYC verification for the specified user. The user must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
+            "description": "Starts KYC verification for a user. User must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
           }
         },
         {
@@ -497,7 +512,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "kyc", "status", "1"]
             },
-            "description": "Gets the KYC status for the specified user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
+            "description": "Gets KYC status for a user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
           }
         },
         {
@@ -521,7 +536,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "funding-account", "1"]
             },
-            "description": "Creates a funding account for the specified user. The user must have a Zynk entity and must not already have a funding account. Returns user data with zynkFundingAccountId and funding account details."
+            "description": "Creates a funding account for a user. User must have a Zynk entity and must not already have a funding account."
           }
         },
         {
@@ -545,7 +560,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "funding-account", "1"]
             },
-            "description": "Gets the funding account details for the specified user. The user must have a Zynk entity and a funding account. Returns bank account information including currency, bank name, routing number, account number, beneficiary details, and payment rails."
+            "description": "Gets funding account details for a user. Returns bank account info including currency, bank name, routing number, account number, and payment rails."
           }
         },
         {
@@ -569,7 +584,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "funding-account", "1", "activate"]
             },
-            "description": "Activates the funding account for the specified user. The user must have a Zynk entity and a funding account. Returns funding account data with status set to 'active'."
+            "description": "Activates a funding account for a user. Returns funding account data with status set to 'active'."
           }
         },
         {
@@ -593,7 +608,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["zynk", "funding-account", "1", "deactivate"]
             },
-            "description": "Deactivates the funding account for the specified user. The user must have a Zynk entity and a funding account. Returns funding account data with status set to 'inactive'."
+            "description": "Deactivates a funding account for a user. Returns funding account data with status set to 'inactive'."
           }
         }
       ]
