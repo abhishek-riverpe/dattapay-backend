@@ -1,12 +1,14 @@
-import exporess, { type Request, type Response } from "express";
-import prismaClient from "../services/prisma-client";
-import APIResponse from "../lib/APIResponse";
+import express from "express";
+import userController from "../controllers/user.controller";
 
-const router = exporess.Router();
+const router = express.Router();
 
-router.get("/", async (req: Request, res: Response) => {
-  const users = await prismaClient.user.findMany();
-  res.status(200).send(new APIResponse(true, "Success", users));
-});
+router.get("/", userController.getAll);
+router.get("/:id", userController.getById);
+router.get("/email/:email", userController.getByEmail);
+router.get("/clerk/:clerkUserId", userController.getByClerkUserId);
+router.post("/", userController.create);
+router.put("/:id", userController.update);
+router.delete("/:id", userController.delete);
 
 export default router;
