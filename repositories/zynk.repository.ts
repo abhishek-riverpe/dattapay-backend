@@ -270,6 +270,58 @@ class ZynkRepository {
       throw new Error(500, "Failed to connect to Zynk API");
     }
   }
+
+  async activateFundingAccount(
+    entityId: string,
+    accountId: string
+  ): Promise<ZynkCreateFundingAccountResponse> {
+    try {
+      const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
+        `/api/v1/transformer/accounts/${entityId}/activate/funding_account/${accountId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const zynkError = error.response.data as ZynkErrorResponse;
+
+        if (zynkError?.error) {
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
+          throw new Error(zynkError.error.code, errorMessage);
+        }
+
+        throw new Error(error.response.status, "Failed to activate funding account");
+      }
+
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
+
+  async deactivateFundingAccount(
+    entityId: string,
+    accountId: string
+  ): Promise<ZynkCreateFundingAccountResponse> {
+    try {
+      const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
+        `/api/v1/transformer/accounts/${entityId}/deactivate/funding_account/${accountId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const zynkError = error.response.data as ZynkErrorResponse;
+
+        if (zynkError?.error) {
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
+          throw new Error(zynkError.error.code, errorMessage);
+        }
+
+        throw new Error(error.response.status, "Failed to deactivate funding account");
+      }
+
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
 }
 
 export default new ZynkRepository();

@@ -129,6 +129,50 @@ class ZynkService {
 
     return response.data;
   }
+
+  async activateFundingAccount(userId: number) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error(404, "User not found");
+    }
+
+    if (!user.zynkEntityId) {
+      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+    }
+
+    if (!user.zynkFundingAccountId) {
+      throw new Error(400, "User does not have a funding account. Create funding account first.");
+    }
+
+    const response = await zynkRepository.activateFundingAccount(
+      user.zynkEntityId,
+      user.zynkFundingAccountId
+    );
+
+    return response.data.data;
+  }
+
+  async deactivateFundingAccount(userId: number) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error(404, "User not found");
+    }
+
+    if (!user.zynkEntityId) {
+      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+    }
+
+    if (!user.zynkFundingAccountId) {
+      throw new Error(400, "User does not have a funding account. Create funding account first.");
+    }
+
+    const response = await zynkRepository.deactivateFundingAccount(
+      user.zynkEntityId,
+      user.zynkFundingAccountId
+    );
+
+    return response.data.data;
+  }
 }
 
 export default new ZynkService();

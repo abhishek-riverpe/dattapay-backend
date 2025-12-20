@@ -547,6 +547,54 @@
             },
             "description": "Gets the funding account details for the specified user. The user must have a Zynk entity and a funding account. Returns bank account information including currency, bank name, routing number, account number, beneficiary details, and payment rails."
           }
+        },
+        {
+          "name": "Activate Funding Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/funding-account/1/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "funding-account", "1", "activate"]
+            },
+            "description": "Activates the funding account for the specified user. The user must have a Zynk entity and a funding account. Returns funding account data with status set to 'active'."
+          }
+        },
+        {
+          "name": "Deactivate Funding Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/funding-account/1/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "funding-account", "1", "deactivate"]
+            },
+            "description": "Deactivates the funding account for the specified user. The user must have a Zynk entity and a funding account. Returns funding account data with status set to 'inactive'."
+          }
         }
       ]
     }
