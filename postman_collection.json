@@ -7,7 +7,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api",
+      "value": "http://localhost:5000/api",
       "type": "string"
     },
     {
@@ -450,6 +450,30 @@
               "path": ["zynk", "entities", "1"]
             },
             "description": "Creates a Zynk entity for the specified user. The user must have an address and must not already have a Zynk entity."
+          }
+        },
+        {
+          "name": "Start KYC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/zynk/kyc/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["zynk", "kyc", "1"]
+            },
+            "description": "Starts KYC verification for the specified user. The user must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
           }
         }
       ]

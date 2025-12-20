@@ -39,6 +39,22 @@ interface ZynkErrorResponse {
   };
 }
 
+interface ZynkKycResponse {
+  success: boolean;
+  data: {
+    message: string;
+    kycLink: string;
+    tosLink: string;
+    kycStatus:
+      | "not_started"
+      | "initiated"
+      | "reviewing"
+      | "additional_info_required"
+      | "rejected"
+      | "approved";
+  };
+}
+
 class ZynkRepository {
   async checkEmailExists(email: string): Promise<boolean> {
     try {
@@ -75,7 +91,40 @@ class ZynkRepository {
       throw new Error(500, "Failed to connect to Zynk API");
     }
   }
+
+  async startKyc(entityId: string): Promise<ZynkKycResponse> {
+    const routingId = process.env.ZYNK_ROUTING_ID;
+
+    if (!routingId) {
+      throw new Error(500, "ZYNK_ROUTING_ID is not configured");
+    }
+
+    try {
+      const response = await zynkClient.post<ZynkKycResponse>(
+        `/api/v1/transformer/entity/kyc/${entityId}/${routingId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        if (error.response.status === 404) {
+          throw new Error(404, "Entity not found in Zynk");
+        }
+
+        const zynkError = error.response.data as ZynkErrorResponse;
+
+        if (zynkError?.error) {
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
+          throw new Error(zynkError.error.code, errorMessage);
+        }
+
+        throw new Error(error.response.status, "KYC request failed");
+      }
+
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
 }
 
 export default new ZynkRepository();
-export type { ZynkEntityData, ZynkEntityResponse };
+export type { ZynkEntityData, ZynkEntityResponse, ZynkKycResponse };
