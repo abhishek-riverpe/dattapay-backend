@@ -8,6 +8,7 @@ import admin from "./middlewares/admin";
 
 import error from "./middlewares/error";
 import router from "./routes";
+import auth from "./middlewares/auth";
 
 dotenv.config();
 

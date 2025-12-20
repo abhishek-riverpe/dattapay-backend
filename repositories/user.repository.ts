@@ -4,35 +4,35 @@ import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 class UserRepository {
   async findAll() {
     return prismaClient.user.findMany({
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 
   async findById(id: number) {
     return prismaClient.user.findUnique({
       where: { id },
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 
   async findByEmail(email: string) {
     return prismaClient.user.findUnique({
       where: { email },
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 
   async findByClerkUserId(clerkUserId: string) {
     return prismaClient.user.findFirst({
       where: { clerkUserId },
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 
   async create(data: CreateUserInput) {
     return prismaClient.user.create({
       data,
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 
@@ -40,7 +40,7 @@ class UserRepository {
     return prismaClient.user.update({
       where: { id },
       data,
-      include: { addresse: true },
+      include: { address: true },
     });
   }
 

@@ -18,7 +18,7 @@ model User {
   phoneNumber       String
   nationality       String
   dateOfBirth       DateTime
-  addresse          Address?
+  address           Address?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
