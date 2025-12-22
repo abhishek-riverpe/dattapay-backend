@@ -1,22 +1,12 @@
-import type { Request, Response, NextFunction } from "express";
-import zynkService from "../services/zynk.service";
+import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import { userIdParamSchema } from "../schemas/user.schema";
-import Error from "../lib/Error";
+import type { AuthRequest } from "../middlewares/auth";
+import zynkService from "../services/zynk.service";
 
 class ZynkController {
-  async createEntity(req: Request, res: Response, next: NextFunction) {
+  async createEntity(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
-      );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const user = await zynkService.createEntity(value.id);
+      const user = await zynkService.createEntity(req.user.id);
       res
         .status(201)
         .json(new APIResponse(true, "Zynk entity created successfully", user));
@@ -25,18 +15,9 @@ class ZynkController {
     }
   }
 
-  async startKyc(req: Request, res: Response, next: NextFunction) {
+  async startKyc(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
-      );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const kycData = await zynkService.startKyc(value.id);
+      const kycData = await zynkService.startKyc(req.user.id);
       res
         .status(200)
         .json(new APIResponse(true, "KYC started successfully", kycData));
@@ -45,101 +26,94 @@ class ZynkController {
     }
   }
 
-  async getKycStatus(req: Request, res: Response, next: NextFunction) {
+  async getKycStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
-      );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const kycStatus = await zynkService.getKycStatus(value.id);
+      const kycStatus = await zynkService.getKycStatus(req.user.id);
       res
         .status(200)
-        .json(new APIResponse(true, "KYC status retrieved successfully", kycStatus));
+        .json(
+          new APIResponse(true, "KYC status retrieved successfully", kycStatus)
+        );
     } catch (error) {
       next(error);
     }
   }
 
-  async createFundingAccount(req: Request, res: Response, next: NextFunction) {
+  async createFundingAccount(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
-      );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const result = await zynkService.createFundingAccount(value.id);
+      const result = await zynkService.createFundingAccount(req.user.id);
       res
         .status(201)
-        .json(new APIResponse(true, "Funding account created successfully", result));
+        .json(
+          new APIResponse(true, "Funding account created successfully", result)
+        );
     } catch (error) {
       next(error);
     }
   }
 
-  async getFundingAccount(req: Request, res: Response, next: NextFunction) {
+  async getFundingAccount(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
-      );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const fundingAccount = await zynkService.getFundingAccount(value.id);
+      const fundingAccount = await zynkService.getFundingAccount(req.user.id);
       res
         .status(200)
-        .json(new APIResponse(true, "Funding account retrieved successfully", fundingAccount));
+        .json(
+          new APIResponse(
+            true,
+            "Funding account retrieved successfully",
+            fundingAccount
+          )
+        );
     } catch (error) {
       next(error);
     }
   }
 
-  async activateFundingAccount(req: Request, res: Response, next: NextFunction) {
+  async activateFundingAccount(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
+      const fundingAccount = await zynkService.activateFundingAccount(
+        req.user.id
       );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const fundingAccount = await zynkService.activateFundingAccount(value.id);
       res
         .status(200)
-        .json(new APIResponse(true, "Funding account activated successfully", fundingAccount));
+        .json(
+          new APIResponse(
+            true,
+            "Funding account activated successfully",
+            fundingAccount
+          )
+        );
     } catch (error) {
       next(error);
     }
   }
 
-  async deactivateFundingAccount(req: Request, res: Response, next: NextFunction) {
+  async deactivateFundingAccount(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const { error, value } = userIdParamSchema.validate(
-        { id: Number(req.params.userId) },
-        { abortEarly: false }
+      const fundingAccount = await zynkService.deactivateFundingAccount(
+        req.user.id
       );
-
-      if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
-      }
-
-      const fundingAccount = await zynkService.deactivateFundingAccount(value.id);
       res
         .status(200)
-        .json(new APIResponse(true, "Funding account deactivated successfully", fundingAccount));
+        .json(
+          new APIResponse(
+            true,
+            "Funding account deactivated successfully",
+            fundingAccount
+          )
+        );
     } catch (error) {
       next(error);
     }

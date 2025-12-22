@@ -1,4 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Response, NextFunction } from "express";
+import type { AuthRequest } from "../middlewares/auth";
 import userService from "../services/user.service";
 import APIResponse from "../lib/APIResponse";
 import {
@@ -9,16 +10,18 @@ import {
 import Error from "../lib/Error";
 
 class UserController {
-  async getAll(req: Request, res: Response, next: NextFunction) {
+  async getAll(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const users = await userService.getAll();
-      res.status(200).json(new APIResponse(true, "Users retrieved successfully", users));
+      res
+        .status(200)
+        .json(new APIResponse(true, "Users retrieved successfully", users));
     } catch (error) {
       next(error);
     }
   }
 
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { error, value } = userIdParamSchema.validate(
         { id: Number(req.params.id) },
@@ -30,13 +33,15 @@ class UserController {
       }
 
       const user = await userService.getById(value.id);
-      res.status(200).json(new APIResponse(true, "User retrieved successfully", user));
+      res
+        .status(200)
+        .json(new APIResponse(true, "User retrieved successfully", user));
     } catch (error) {
       next(error);
     }
   }
 
-  async getByEmail(req: Request, res: Response, next: NextFunction) {
+  async getByEmail(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const email = req.params.email;
       if (!email) {
@@ -44,13 +49,15 @@ class UserController {
       }
 
       const user = await userService.getByEmail(email);
-      res.status(200).json(new APIResponse(true, "User retrieved successfully", user));
+      res
+        .status(200)
+        .json(new APIResponse(true, "User retrieved successfully", user));
     } catch (error) {
       next(error);
     }
   }
 
-  async getByClerkUserId(req: Request, res: Response, next: NextFunction) {
+  async getByClerkUserId(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const clerkUserId = req.params.clerkUserId;
       if (!clerkUserId) {
@@ -58,13 +65,15 @@ class UserController {
       }
 
       const user = await userService.getByClerkUserId(clerkUserId);
-      res.status(200).json(new APIResponse(true, "User retrieved successfully", user));
+      res
+        .status(200)
+        .json(new APIResponse(true, "User retrieved successfully", user));
     } catch (error) {
       next(error);
     }
   }
 
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { error, value } = createUserSchema.validate(req.body, {
         abortEarly: false,
@@ -75,21 +84,27 @@ class UserController {
       }
 
       const user = await userService.create(value);
-      res.status(201).json(new APIResponse(true, "User created successfully", user));
+      res
+        .status(201)
+        .json(new APIResponse(true, "User created successfully", user));
     } catch (error) {
       next(error);
     }
   }
 
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { error: paramError, value: paramValue } = userIdParamSchema.validate(
-        { id: Number(req.params.id) },
-        { abortEarly: false }
-      );
+      const { error: paramError, value: paramValue } =
+        userIdParamSchema.validate(
+          { id: Number(req.params.id) },
+          { abortEarly: false }
+        );
 
       if (paramError) {
-        throw new Error(400, paramError.details.map((d) => d.message).join(", "));
+        throw new Error(
+          400,
+          paramError.details.map((d) => d.message).join(", ")
+        );
       }
 
       const { error: bodyError, value: bodyValue } = updateUserSchema.validate(
@@ -98,17 +113,22 @@ class UserController {
       );
 
       if (bodyError) {
-        throw new Error(400, bodyError.details.map((d) => d.message).join(", "));
+        throw new Error(
+          400,
+          bodyError.details.map((d) => d.message).join(", ")
+        );
       }
 
       const user = await userService.update(paramValue.id, bodyValue);
-      res.status(200).json(new APIResponse(true, "User updated successfully", user));
+      res
+        .status(200)
+        .json(new APIResponse(true, "User updated successfully", user));
     } catch (error) {
       next(error);
     }
   }
 
-  async delete(req: Request, res: Response, next: NextFunction) {
+  async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { error, value } = userIdParamSchema.validate(
         { id: Number(req.params.id) },
