@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DattaPay API",
-    "description": "API collection for DattaPay Server - User, Address, and Zynk endpoints. All endpoints use authenticated user from JWT token.",
+    "description": "API collection for DattaPay Server - User, Address, Zynk, and Wallet endpoints. All endpoints use authenticated user from JWT token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -480,6 +480,186 @@
               "path": ["zynk", "funding-account", "deactivate"]
             },
             "description": "Deactivates the funding account for the authenticated user. Returns funding account data with status set to 'inactive'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallets",
+      "description": "Wallet management endpoints - uses authenticated user from JWT. Requires completed KYC.",
+      "item": [
+        {
+          "name": "Initiate Session (Send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallets/session/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets", "session", "initiate"]
+            },
+            "description": "Initiates wallet session by sending OTP to user's registered email. User must have completed KYC. Returns otpId for verification."
+          }
+        },
+        {
+          "name": "Verify Session (Verify OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpId\": \"otp_xxxxxxxxxxxxx\",\n  \"otpCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wallets/session/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets", "session", "verify"]
+            },
+            "description": "Verifies OTP and establishes session for wallet operations. Session is valid for 15 minutes. Returns sessionId and expiresAt."
+          }
+        },
+        {
+          "name": "Create Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletName\": \"My Wallet\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wallets",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets"]
+            },
+            "description": "Creates a wallet for the authenticated user. Requires active session from OTP verification. walletName is optional (defaults to 'Primary Wallet'). If wallet already exists, returns existing wallet. Each user can only have one wallet."
+          }
+        },
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallets",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets"]
+            },
+            "description": "Retrieves the wallet for the authenticated user including account details (address, chain, status). No OTP required."
+          }
+        },
+        {
+          "name": "Get Wallet Balances",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallets/balances",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets", "balances"]
+            },
+            "description": "Retrieves token balances for the user's wallet. Returns array of balances with tokenAddress, symbol, name, decimals, balance, and usdValue. No OTP required."
+          }
+        },
+        {
+          "name": "Get Wallet Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallets/transactions?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of transactions to return (1-100, default: 20)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of transactions to skip (default: 0)"
+                }
+              ]
+            },
+            "description": "Retrieves transaction history for the user's wallet. Returns array of transactions with hash, type, status, timestamp, from, to, amount, tokenSymbol, and fee. Supports pagination with limit and offset. No OTP required."
           }
         }
       ]
