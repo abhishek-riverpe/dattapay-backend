@@ -37,8 +37,6 @@ class AddressService {
     if (existingAddress) {
       throw new Error(409, "User already has an address");
     }
-    await userRepository.update(user.id, { accountStatus: "PENDING" });
-
     return addressRepository.create(data);
   }
 
