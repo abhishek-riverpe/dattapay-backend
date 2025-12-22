@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DattaPay API",
-    "description": "API collection for DattaPay Server - User, Address, and Zynk endpoints",
+    "description": "API collection for DattaPay Server - User, Address, and Zynk endpoints. All endpoints use authenticated user from JWT token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -24,7 +24,7 @@
   "item": [
     {
       "name": "Users",
-      "description": "User management endpoints",
+      "description": "User management endpoints - uses authenticated user from JWT",
       "item": [
         {
           "name": "Get All Users",
@@ -51,7 +51,7 @@
           }
         },
         {
-          "name": "Get User by ID",
+          "name": "Get Current User",
           "request": {
             "method": "GET",
             "header": [
@@ -67,15 +67,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/1",
+              "raw": "{{baseUrl}}/users/me",
               "host": ["{{baseUrl}}"],
-              "path": ["users", "1"]
+              "path": ["users", "me"]
             },
-            "description": "Retrieves a user by their ID."
+            "description": "Retrieves the currently authenticated user."
           }
         },
         {
-          "name": "Get User by Email",
+          "name": "Get Current User by Email",
           "request": {
             "method": "GET",
             "header": [
@@ -91,35 +91,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/email/john.doe@email.com",
+              "raw": "{{baseUrl}}/users/email",
               "host": ["{{baseUrl}}"],
-              "path": ["users", "email", "john.doe@email.com"]
+              "path": ["users", "email"]
             },
-            "description": "Retrieves a user by their email address."
-          }
-        },
-        {
-          "name": "Get User by Clerk User ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users/clerk/user_2xYz8KmNpQrStUvWx",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "clerk", "user_2xYz8KmNpQrStUvWx"]
-            },
-            "description": "Retrieves a user by their Clerk user ID."
+            "description": "Retrieves the currently authenticated user by their email."
           }
         },
         {
@@ -156,7 +132,7 @@
           }
         },
         {
-          "name": "Update User",
+          "name": "Update Current User",
           "request": {
             "method": "PUT",
             "header": [
@@ -181,15 +157,15 @@
               "raw": "{\n  \"firstName\": \"Johnny\",\n  \"phoneNumber\": \"4155559876\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/users/1",
+              "raw": "{{baseUrl}}/users/update-user",
               "host": ["{{baseUrl}}"],
-              "path": ["users", "1"]
+              "path": ["users", "update-user"]
             },
-            "description": "Updates an existing user by ID."
+            "description": "Updates the currently authenticated user."
           }
         },
         {
-          "name": "Delete User",
+          "name": "Delete Current User",
           "request": {
             "method": "DELETE",
             "header": [
@@ -205,21 +181,21 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/1",
+              "raw": "{{baseUrl}}/users/delete-user",
               "host": ["{{baseUrl}}"],
-              "path": ["users", "1"]
+              "path": ["users", "delete-user"]
             },
-            "description": "Deletes a user by ID. Also deletes associated address."
+            "description": "Deletes the currently authenticated user. Also deletes associated address."
           }
         }
       ]
     },
     {
       "name": "Addresses",
-      "description": "Address management endpoints",
+      "description": "Address management endpoints - uses authenticated user from JWT",
       "item": [
         {
-          "name": "Get All Addresses",
+          "name": "Get Current User's Address",
           "request": {
             "method": "GET",
             "header": [
@@ -239,55 +215,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["addresses"]
             },
-            "description": "Retrieves all addresses from the database."
-          }
-        },
-        {
-          "name": "Get Address by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/addresses/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "1"]
-            },
-            "description": "Retrieves an address by its ID."
-          }
-        },
-        {
-          "name": "Get Address by User ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/addresses/user/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "user", "1"]
-            },
-            "description": "Retrieves an address by the user ID."
+            "description": "Retrieves the address for the currently authenticated user."
           }
         },
         {
@@ -313,18 +241,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"addressLine1\": \"123 Main Street\",\n  \"addressLine2\": \"Apt 4B\",\n  \"locality\": \"Downtown\",\n  \"city\": \"San Francisco\",\n  \"state\": \"CA\",\n  \"country\": \"US\",\n  \"postalCode\": \"94102\",\n  \"userId\": 1\n}"
+              "raw": "{\n  \"addressLine1\": \"123 Main Street\",\n  \"addressLine2\": \"Apt 4B\",\n  \"locality\": \"Downtown\",\n  \"city\": \"San Francisco\",\n  \"state\": \"CA\",\n  \"country\": \"US\",\n  \"postalCode\": \"94102\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/addresses",
               "host": ["{{baseUrl}}"],
               "path": ["addresses"]
             },
-            "description": "Creates a new address for a user. Each user can only have one address."
+            "description": "Creates a new address for the currently authenticated user. Each user can only have one address."
           }
         },
         {
-          "name": "Update Address by ID",
+          "name": "Update Current User's Address",
           "request": {
             "method": "PUT",
             "header": [
@@ -349,48 +277,15 @@
               "raw": "{\n  \"addressLine1\": \"456 Oak Avenue\",\n  \"city\": \"Los Angeles\",\n  \"state\": \"CA\",\n  \"postalCode\": \"90001\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/addresses/1",
+              "raw": "{{baseUrl}}/addresses",
               "host": ["{{baseUrl}}"],
-              "path": ["addresses", "1"]
+              "path": ["addresses"]
             },
-            "description": "Updates an address by its ID."
+            "description": "Updates the address for the currently authenticated user."
           }
         },
         {
-          "name": "Update Address by User ID",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"addressLine1\": \"789 Pine Street\",\n  \"locality\": \"Midtown\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"postalCode\": \"10001\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/addresses/user/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "user", "1"]
-            },
-            "description": "Updates an address by the user ID."
-          }
-        },
-        {
-          "name": "Delete Address by ID",
+          "name": "Delete Current User's Address",
           "request": {
             "method": "DELETE",
             "header": [
@@ -406,42 +301,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/addresses/1",
+              "raw": "{{baseUrl}}/addresses",
               "host": ["{{baseUrl}}"],
-              "path": ["addresses", "1"]
+              "path": ["addresses"]
             },
-            "description": "Deletes an address by its ID."
-          }
-        },
-        {
-          "name": "Delete Address by User ID",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/addresses/user/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "user", "1"]
-            },
-            "description": "Deletes an address by the user ID."
+            "description": "Deletes the address for the currently authenticated user."
           }
         }
       ]
     },
     {
       "name": "Zynk",
-      "description": "Zynk integration endpoints for entity management, KYC, and funding accounts",
+      "description": "Zynk integration endpoints - uses authenticated user from JWT",
       "item": [
         {
           "name": "Create Zynk Entity",
@@ -460,11 +331,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/entities/1",
+              "raw": "{{baseUrl}}/zynk/entities",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "entities", "1"]
+              "path": ["zynk", "entities"]
             },
-            "description": "Creates a Zynk entity for a user. User must have an address and must not already have a Zynk entity."
+            "description": "Creates a Zynk entity for the authenticated user. User must have an address and must not already have a Zynk entity."
           }
         },
         {
@@ -484,11 +355,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/kyc/1",
+              "raw": "{{baseUrl}}/zynk/kyc",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "kyc", "1"]
+              "path": ["zynk", "kyc"]
             },
-            "description": "Starts KYC verification for a user. User must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
+            "description": "Starts KYC verification for the authenticated user. User must have a Zynk entity. Returns kycLink, tosLink, and kycStatus."
           }
         },
         {
@@ -508,11 +379,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/kyc/status/1",
+              "raw": "{{baseUrl}}/zynk/kyc/status",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "kyc", "status", "1"]
+              "path": ["zynk", "kyc", "status"]
             },
-            "description": "Gets KYC status for a user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
+            "description": "Gets KYC status for the authenticated user. Returns status array with routingId, supportedRoutes, kycStatus, routingEnabled, and kycFees."
           }
         },
         {
@@ -532,11 +403,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/funding-account/1",
+              "raw": "{{baseUrl}}/zynk/funding-account",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "funding-account", "1"]
+              "path": ["zynk", "funding-account"]
             },
-            "description": "Creates a funding account for a user. User must have a Zynk entity and must not already have a funding account."
+            "description": "Creates a funding account for the authenticated user. User must have a Zynk entity and must not already have a funding account."
           }
         },
         {
@@ -556,11 +427,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/funding-account/1",
+              "raw": "{{baseUrl}}/zynk/funding-account",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "funding-account", "1"]
+              "path": ["zynk", "funding-account"]
             },
-            "description": "Gets funding account details for a user. Returns bank account info including currency, bank name, routing number, account number, and payment rails."
+            "description": "Gets funding account details for the authenticated user. Returns bank account info including currency, bank name, routing number, account number, and payment rails."
           }
         },
         {
@@ -580,11 +451,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/funding-account/1/activate",
+              "raw": "{{baseUrl}}/zynk/funding-account/activate",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "funding-account", "1", "activate"]
+              "path": ["zynk", "funding-account", "activate"]
             },
-            "description": "Activates a funding account for a user. Returns funding account data with status set to 'active'."
+            "description": "Activates the funding account for the authenticated user. Returns funding account data with status set to 'active'."
           }
         },
         {
@@ -604,11 +475,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/zynk/funding-account/1/deactivate",
+              "raw": "{{baseUrl}}/zynk/funding-account/deactivate",
               "host": ["{{baseUrl}}"],
-              "path": ["zynk", "funding-account", "1", "deactivate"]
+              "path": ["zynk", "funding-account", "deactivate"]
             },
-            "description": "Deactivates a funding account for a user. Returns funding account data with status set to 'inactive'."
+            "description": "Deactivates the funding account for the authenticated user. Returns funding account data with status set to 'inactive'."
           }
         }
       ]
