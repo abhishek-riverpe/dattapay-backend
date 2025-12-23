@@ -1,15 +1,6 @@
-import {
-  CipherSuite,
-  DhkemP256HkdfSha256,
-  HkdfSha256,
-  Aes256Gcm,
-} from "@hpke/core";
-import { bytesFromHex, bytesToHex, decodeBundle } from "./utils";
-import {
-  derivePublicKeyFromPrivate,
-  uncompressPublicKey,
-} from "./keypair";
-import type { KeyPair } from "./keypair";
+import elliptic from "elliptic";
+import bs58check from "bs58check";
+const EC = elliptic.ec;
 
 /**
  * Result of decrypting a credential bundle
@@ -20,68 +11,28 @@ export interface DecryptedCredentials {
 }
 
 /**
- * Create HPKE cipher suite for P-256 with HKDF-SHA256 and AES-256-GCM
+ * Convert hex string to Uint8Array
  */
-function createCipherSuite() {
-  return new CipherSuite({
-    kem: new DhkemP256HkdfSha256(),
-    kdf: new HkdfSha256(),
-    aead: new Aes256Gcm(),
-  });
+function uint8ArrayFromHexString(hex: string): Uint8Array {
+  const matches = hex.match(/.{1,2}/g);
+  if (!matches) throw new Error("Invalid hex string");
+  return new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
 }
 
 /**
- * Parse the encapped key and ciphertext from bundle bytes
- * Handles both compressed (33 bytes) and uncompressed (65 bytes) encapped keys
+ * Convert Uint8Array to hex string
  */
-function parseBundleEncappedKey(bundleBytes: Buffer): {
-  enc: Uint8Array;
-  ciphertext: Uint8Array;
-} {
-  if (bundleBytes.length === 0) {
-    throw new Error("Bundle is empty");
-  }
-
-  const firstByte = bundleBytes[0];
-
-  let enc: Buffer;
-  let ciphertext: Buffer;
-
-  if (firstByte === 0x04) {
-    // Uncompressed public key (65 bytes)
-    if (bundleBytes.length < 65) {
-      throw new Error(
-        `Bundle too small for uncompressed key: ${bundleBytes.length} bytes`
-      );
-    }
-    enc = bundleBytes.subarray(0, 65);
-    ciphertext = bundleBytes.subarray(65);
-  } else if (firstByte === 0x02 || firstByte === 0x03) {
-    // Compressed public key (33 bytes)
-    if (bundleBytes.length < 33) {
-      throw new Error(
-        `Bundle too small for compressed key: ${bundleBytes.length} bytes`
-      );
-    }
-    const compressedEncappedKey = bundleBytes.subarray(0, 33);
-    ciphertext = bundleBytes.subarray(33);
-    // Uncompress the encapped key for HPKE
-    enc = uncompressPublicKey(compressedEncappedKey);
-  } else {
-    throw new Error(
-      `Invalid encapped key prefix: 0x${firstByte?.toString(16) ?? "unknown"}`
-    );
-  }
-
-  return {
-    enc: new Uint8Array(enc),
-    ciphertext: new Uint8Array(ciphertext),
-  };
+function uint8ArrayToHexString(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /**
- * Decrypt a credential bundle using HPKE
- * @param bundleStr - Credential bundle (hex or bs58check encoded)
+ * Decrypt a credential bundle using manual HPKE implementation.
+ * Matches key-generator-main/decrypt_bundle.js implementation exactly.
+ *
+ * @param bundleStr - Credential bundle (bs58check encoded)
  * @param ephemeralPrivateKey - 64-char hex private key
  * @returns Decrypted session keys
  */
@@ -89,65 +40,75 @@ export async function decryptCredentialBundle(
   bundleStr: string,
   ephemeralPrivateKey: string
 ): Promise<DecryptedCredentials> {
+  // Dynamic import of hpke-js (matches key-generator-main)
+  const { CipherSuite, KemId, KdfId, AeadId } = await import("hpke-js");
+
   // Decode the bundle
-  const bundleBytes = decodeBundle(bundleStr);
+  const bundleBytes = bs58check.decode(bundleStr);
 
-  // Parse encapped key and ciphertext
-  const { enc, ciphertext } = parseBundleEncappedKey(bundleBytes);
-
-  // Validate ciphertext size (must include GCM tag)
-  if (ciphertext.length < 16) {
-    throw new Error(`Ciphertext too small: ${ciphertext.length} bytes`);
+  if (bundleBytes.length < 33) {
+    throw new Error("Bundle too small");
   }
 
-  // Create cipher suite
-  const suite = createCipherSuite();
+  // Extract compressed encapped key and ciphertext
+  const compressedEncappedKeyBuf = bundleBytes.slice(0, 33);
+  const ciphertextBuf = bundleBytes.slice(33);
 
-  // Get receiver's public key (uncompressed)
-  const { uncompressed: receiverPublicKey } =
-    derivePublicKeyFromPrivate(ephemeralPrivateKey);
+  // Decompress the encapped key
+  const ec = new EC("p256");
+  const point = ec.curve.decodePoint(Buffer.from(compressedEncappedKeyBuf));
+  const encappedKeyHex = point.encode("hex", false);
+  const enc = uint8ArrayFromHexString(encappedKeyHex);
 
-  // Import the private key
-  const privateKeyBytes = bytesFromHex(ephemeralPrivateKey);
 
-  // Create the recipient key from raw private key bytes
-  const recipientKeyPair = await suite.kem.importKey(
-    "raw",
-    new Uint8Array(privateKeyBytes),
-    false // isPublic = false
-  );
+  // Create HPKE cipher suite
+  const suite = new CipherSuite({
+    kem: KemId.DhkemP256HkdfSha256,
+    kdf: KdfId.HkdfSha256,
+    aead: AeadId.Aes256Gcm,
+  });
 
-  // Build AAD: enc || receiver_public_key (uncompressed)
+  // Get receiver's key pair
+  const recipientKeyPair = ec.keyFromPrivate(ephemeralPrivateKey, "hex");
+  const receiverPublicKeyHex = recipientKeyPair.getPublic(false, "hex");
+  const receiverPublicKey = uint8ArrayFromHexString(receiverPublicKeyHex);
+
+
+  // Import the recipient's private key
+  const skR = uint8ArrayFromHexString(ephemeralPrivateKey);
+  const recipientKey = await suite.kem.importKey("raw", skR, false);
+
+  // Build AAD (Additional Authenticated Data)
   const aad = new Uint8Array(enc.length + receiverPublicKey.length);
   aad.set(enc, 0);
-  aad.set(new Uint8Array(receiverPublicKey), enc.length);
+  aad.set(receiverPublicKey, enc.length);
 
-  // Info string used by Turnkey/Zynk
+
+  // Create info for HPKE
   const info = new TextEncoder().encode("turnkey_hpke");
 
   // Create recipient context and decrypt
-  // Cast to any to avoid strict type checking issues with @hpke/core
   const recipientCtx = await suite.createRecipientContext({
-    recipientKey: recipientKeyPair,
+    recipientKey,
     enc: enc.buffer.slice(enc.byteOffset, enc.byteOffset + enc.byteLength) as ArrayBuffer,
     info: info.buffer.slice(info.byteOffset, info.byteOffset + info.byteLength) as ArrayBuffer,
   });
 
-  // Decrypt the ciphertext
   const plaintext = await recipientCtx.open(
-    ciphertext.buffer.slice(ciphertext.byteOffset, ciphertext.byteOffset + ciphertext.byteLength) as ArrayBuffer,
+    ciphertextBuf.buffer.slice(ciphertextBuf.byteOffset, ciphertextBuf.byteOffset + ciphertextBuf.byteLength) as ArrayBuffer,
     aad.buffer.slice(aad.byteOffset, aad.byteOffset + aad.byteLength) as ArrayBuffer
   );
 
-  // Convert plaintext to hex (this is the session private key)
-  const sessionPrivateKey = bytesToHex(Buffer.from(plaintext)).padStart(
-    64,
-    "0"
-  );
+  // Convert plaintext to private key hex
+  const ptBytes = plaintext instanceof ArrayBuffer ? new Uint8Array(plaintext) : plaintext;
+  const privateKeyHex = uint8ArrayToHexString(ptBytes);
 
-  // Derive the session public key (compressed)
-  const { compressed } = derivePublicKeyFromPrivate(sessionPrivateKey);
-  const sessionPublicKey = bytesToHex(compressed);
+
+  // Derive keys using elliptic (matches key-generator-main)
+  const keyPair = ec.keyFromPrivate(privateKeyHex, "hex");
+  const sessionPublicKey = keyPair.getPublic(true, "hex");
+  const sessionPrivateKey = keyPair.getPrivate("hex").padStart(64, "0");
+
 
   return {
     sessionPublicKey,

@@ -10,10 +10,8 @@ export const verifySessionSchema = Joi.object({
     "any.required": "OTP ID is required",
   }),
 
-  otpCode: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+  otpCode: Joi.string().required().messages({
     "string.empty": "OTP code cannot be empty",
-    "string.length": "OTP code must be exactly 6 digits",
-    "string.pattern.base": "OTP code must contain only digits",
     "any.required": "OTP code is required",
   }),
 });

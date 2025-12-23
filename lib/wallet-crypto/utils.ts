@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import bs58check from "bs58check";
 
 /**
  * P-256 curve order for canonical signature enforcement
@@ -62,16 +63,14 @@ export function decodeBundle(bundleStr: string): Buffer {
   if (isHexString(bundleStr)) {
     return Buffer.from(bundleStr, "hex");
   }
-  // For base58check, we need to use a library
-  // Import dynamically to avoid issues if not installed
-  const bs58check = require("bs58check");
-  return bs58check.decode(bundleStr);
+  // Decode base58check encoded bundle
+  const decoded = bs58check.decode(bundleStr);
+  return Buffer.from(decoded);
 }
 
 /**
  * Encode bytes to base58check format
  */
 export function encodeBase58Check(data: Buffer): string {
-  const bs58check = require("bs58check");
   return bs58check.encode(data);
 }

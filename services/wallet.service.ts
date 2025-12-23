@@ -1,4 +1,4 @@
-import Error from "../lib/Error";
+import CustomError from "../lib/Error";
 import userRepository from "../repositories/user.repository";
 import walletRepository from "../repositories/wallet.repository";
 import zynkWalletRepository from "../repositories/zynk-wallet.repository";
@@ -22,28 +22,59 @@ class WalletService {
 
   /**
    * Initiate wallet session - sends OTP to user's email
+   * If auth is already registered, just send OTP
    */
   async initiateSession(userId: number) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new CustomError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User must complete KYC before creating a wallet");
+      throw new CustomError(400, "User must complete KYC before creating a wallet");
     }
 
-    // Register auth and initiate OTP with Zynk
-    const response = await zynkWalletRepository.registerAuth(user.zynkEntityId);
+    let otpId: string;
+
+    try {
+      // Try to register auth first (this also sends OTP)
+      const response = await zynkWalletRepository.registerAuth(
+        user.zynkEntityId,
+        user.email
+      );
+      otpId = response.data.otpId;
+    } catch (error) {
+      // If already registered, just initiate OTP
+      const errorMessage =
+        error instanceof CustomError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : String(error);
+
+      if (
+        errorMessage.includes("already has a registered") ||
+        errorMessage.includes("already registered") ||
+        errorMessage.includes("Turnkey organization")
+      ) {
+        const otpResponse = await zynkWalletRepository.initiateOtp(
+          user.zynkEntityId
+        );
+        otpId = otpResponse.data.otpId;
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
+    }
 
     // Create session record in database
     await walletRepository.createSession({
       userId: user.id,
-      otpId: response.data.otpId,
+      otpId,
     });
 
     return {
-      otpId: response.data.otpId,
+      otpId,
       message: "OTP sent to your registered email",
     };
   }
@@ -54,25 +85,25 @@ class WalletService {
   async verifySession(userId: number, input: VerifySessionInput) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new CustomError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User must complete KYC before creating a wallet");
+      throw new CustomError(400, "User must complete KYC before creating a wallet");
     }
 
     // Find the pending session
     const session = await walletRepository.findSessionByOtpId(input.otpId);
     if (!session) {
-      throw new Error(404, "Session not found");
+      throw new CustomError(404, "Session not found");
     }
 
     if (session.userId !== userId) {
-      throw new Error(403, "Session does not belong to this user");
+      throw new CustomError(403, "Session does not belong to this user");
     }
 
     if (session.status !== "PENDING") {
-      throw new Error(400, "Session is not in pending state");
+      throw new CustomError(400, "Session is not in pending state");
     }
 
     // Generate ephemeral keypair for HPKE
@@ -120,15 +151,21 @@ class WalletService {
   /**
    * Create wallet for user
    * Returns existing wallet if user already has one
+   *
+   * Flow:
+   * 1. Prepare wallet creation → get payload to sign
+   * 2. Sign payload → submit wallet → get walletId
+   * 3. Prepare account creation → get payload to sign
+   * 4. Sign payload → submit account → get account details
    */
   async createWallet(userId: number, input: CreateWalletInput) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new CustomError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User must complete KYC before creating a wallet");
+      throw new CustomError(400, "User must complete KYC before creating a wallet");
     }
 
     // Check if user already has a wallet
@@ -145,58 +182,84 @@ class WalletService {
     // Get active session
     const session = await walletRepository.findActiveSessionByUserId(userId);
     if (!session) {
-      throw new Error(401, "No active session. Please verify OTP first.");
+      throw new CustomError(401, "No active session. Please verify OTP first.");
     }
 
     if (!session.sessionPrivateKey || !session.sessionPublicKey) {
-      throw new Error(400, "Session keys not found. Please verify OTP again.");
+      throw new CustomError(400, "Session keys not found. Please verify OTP again.");
     }
 
     // Get chain from environment
     const chain = process.env.DEFAULT_WALLET_CHAIN || "SOLANA";
+    const walletName = input.walletName || "Primary Wallet";
 
-    // Prepare wallet creation with Zynk
-    const prepareResponse = await zynkWalletRepository.prepareWallet(
+    // ============================================
+    // Step 1: Create Wallet
+    // ============================================
+
+    // Prepare wallet creation with Zynk (entityId in URL path)
+    const prepareWalletResponse = await zynkWalletRepository.prepareWallet(
       user.zynkEntityId,
-      {
-        walletName: input.walletName || "Primary Wallet",
-        chain,
-      }
+      { walletName, chain }
     );
 
-    // Sign the payload
-    const signature = signPayload(
-      prepareResponse.data.payloadToSign,
+    // Sign the wallet creation payload
+    const walletSignature = signPayload(
+      prepareWalletResponse.data.payloadToSign,
       session.sessionPrivateKey,
       session.sessionPublicKey
     );
 
     // Submit wallet creation
-    const submitResponse = await zynkWalletRepository.submitWallet({
-      payloadId: prepareResponse.data.payloadId,
-      signature,
+    const submitWalletResponse = await zynkWalletRepository.submitWallet({
+      payloadId: prepareWalletResponse.data.payloadId,
+      signature: walletSignature,
+    });
+
+    const walletId = submitWalletResponse.data.walletId;
+    if (!walletId) {
+      throw new CustomError(500, "Wallet creation failed: no walletId returned");
+    }
+
+    // ============================================
+    // Step 2: Create Account
+    // ============================================
+
+    // Prepare account creation with the new walletId
+    const prepareAccountResponse = await zynkWalletRepository.prepareAccount(
+      walletId,
+      { chain }
+    );
+
+    // Sign the account creation payload
+    const accountSignature = signPayload(
+      prepareAccountResponse.data.payloadToSign,
+      session.sessionPrivateKey,
+      session.sessionPublicKey
+    );
+
+    // Submit account creation
+    const submitAccountResponse = await zynkWalletRepository.submitAccount({
+      payloadId: prepareAccountResponse.data.payloadId,
+      signature: accountSignature,
     });
 
     // Get account data from response
-    const firstAddress = submitResponse.data.addresses[0];
-    if (!firstAddress) {
-      throw new Error(500, "Wallet creation failed: no address returned");
+    const accountData = submitAccountResponse.data.account;
+    if (!accountData || !accountData.address) {
+      throw new CustomError(500, "Account creation failed: no account data returned");
     }
 
-    const accountData = submitResponse.data.accounts?.[0] || {
-      address: firstAddress,
-      curve: "CURVE_ED25519",
-      pathFormat: "PATH_FORMAT_BIP32",
-      path: "m/44'/501'/0'/0'",
-      addressFormat: "ADDRESS_FORMAT_SOLANA",
-    };
+    // ============================================
+    // Step 3: Save to Database
+    // ============================================
 
     // Create wallet and account in database
     const wallet = await walletRepository.createWalletWithAccount(
       {
         userId,
-        zynkWalletId: submitResponse.data.walletId,
-        walletName: input.walletName || "Primary Wallet",
+        zynkWalletId: walletId,
+        walletName,
         chain,
       },
       {
@@ -224,7 +287,7 @@ class WalletService {
   async getWallet(userId: number) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new Error(404, "Wallet not found. Please create a wallet first.");
+      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
     }
 
     return wallet;
@@ -236,7 +299,7 @@ class WalletService {
   async getBalances(userId: number) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new Error(404, "Wallet not found. Please create a wallet first.");
+      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
     }
 
     const response = await zynkWalletRepository.getBalances(wallet.zynkWalletId);
@@ -260,11 +323,11 @@ class WalletService {
   ) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new Error(404, "Wallet not found. Please create a wallet first.");
+      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
     }
 
     if (!wallet.account) {
-      throw new Error(404, "Wallet account not found");
+      throw new CustomError(404, "Wallet account not found");
     }
 
     const response = await zynkWalletRepository.getTransactions(

@@ -45,7 +45,7 @@ interface StartSessionResponse {
   };
 }
 
-// Prepare Wallet
+// Prepare Wallet - entityId goes in URL path (matches FastAPI)
 interface PrepareWalletRequest {
   walletName: string;
   chain: string;
@@ -67,6 +67,35 @@ interface SubmitWalletRequest {
   signatureType?: string;
 }
 
+interface SubmitWalletResponse {
+  success: boolean;
+  data: {
+    walletId: string;
+    addresses: string[];
+  };
+}
+
+// Prepare Account
+interface PrepareAccountRequest {
+  chain: string;
+}
+
+interface PrepareAccountResponse {
+  success: boolean;
+  data: {
+    payloadId: string;
+    payloadToSign: string;
+    rpId: string;
+  };
+}
+
+// Submit Account
+interface SubmitAccountRequest {
+  payloadId: string;
+  signature: string;
+  signatureType?: string;
+}
+
 interface WalletAccountData {
   address: string;
   curve: string;
@@ -75,12 +104,12 @@ interface WalletAccountData {
   addressFormat: string;
 }
 
-interface SubmitWalletResponse {
+interface SubmitAccountResponse {
   success: boolean;
   data: {
     walletId: string;
-    addresses: string[];
-    accounts?: WalletAccountData[];
+    account: WalletAccountData;
+    address: string;
   };
 }
 
@@ -162,10 +191,16 @@ class ZynkWalletRepository {
    * Register email-based authentication with Zynk
    * This automatically initiates OTP
    */
-  async registerAuth(entityId: string): Promise<RegisterAuthResponse> {
+  async registerAuth(entityId: string, email: string): Promise<RegisterAuthResponse> {
     try {
       const response = await zynkClient.post<RegisterAuthResponse>(
-        `/api/v1/wallets/${entityId}/register-auth`
+        `/api/v1/wallets/${entityId}/register-auth`,
+        {
+          authType: "Email_Auth",
+          authPayload: {
+            email: email
+          }
+        }
       );
       return response.data;
     } catch (error) {
@@ -211,6 +246,7 @@ class ZynkWalletRepository {
 
   /**
    * Prepare wallet creation - get payload to sign
+   * POST /api/v1/wallets/{entityId}/create/prepare
    */
   async prepareWallet(
     entityId: string,
@@ -229,6 +265,7 @@ class ZynkWalletRepository {
 
   /**
    * Submit wallet creation with signature
+   * POST /api/v1/wallets/create/submit
    */
   async submitWallet(data: SubmitWalletRequest): Promise<SubmitWalletResponse> {
     try {
@@ -242,6 +279,44 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       this.handleError(error, "Failed to submit wallet creation");
+    }
+  }
+
+  /**
+   * Prepare account creation - get payload to sign
+   * POST /api/v1/wallets/{walletId}/accounts/prepare
+   */
+  async prepareAccount(
+    walletId: string,
+    data: PrepareAccountRequest
+  ): Promise<PrepareAccountResponse> {
+    try {
+      const response = await zynkClient.post<PrepareAccountResponse>(
+        `/api/v1/wallets/${walletId}/accounts/prepare`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError(error, "Failed to prepare account creation");
+    }
+  }
+
+  /**
+   * Submit account creation with signature
+   * POST /api/v1/wallets/accounts/submit
+   */
+  async submitAccount(data: SubmitAccountRequest): Promise<SubmitAccountResponse> {
+    try {
+      const response = await zynkClient.post<SubmitAccountResponse>(
+        `/api/v1/wallets/accounts/submit`,
+        {
+          ...data,
+          signatureType: data.signatureType || "ApiKey",
+        }
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError(error, "Failed to submit account creation");
     }
   }
 
@@ -318,6 +393,10 @@ export type {
   PrepareWalletResponse,
   SubmitWalletRequest,
   SubmitWalletResponse,
+  PrepareAccountRequest,
+  PrepareAccountResponse,
+  SubmitAccountRequest,
+  SubmitAccountResponse,
   GetWalletResponse,
   GetBalancesResponse,
   GetTransactionsResponse,

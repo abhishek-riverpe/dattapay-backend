@@ -1,4 +1,5 @@
-import { p256 } from "@noble/curves/p256";
+import elliptic from "elliptic";
+const EC = elliptic.ec;
 import { bytesFromHex, bytesToHex } from "./utils";
 
 export interface KeyPair {
@@ -7,18 +8,26 @@ export interface KeyPair {
 }
 
 /**
- * Generate a new P-256 ephemeral key pair
+ * Generate a new P-256 ephemeral key pair using elliptic.js
+ * Matches key-generator-main/generate_keys.js implementation exactly.
  * @param compressed - If true, return compressed public key (33 bytes), else uncompressed (65 bytes)
  * @returns KeyPair with hex-encoded keys
  */
 export function generateKeypair(compressed: boolean = false): KeyPair {
-  const privateKeyBytes = p256.utils.randomPrivateKey();
-  const privateKey = bytesToHex(privateKeyBytes);
+  const ec = new EC("p256");
+  const keyPair = ec.genKeyPair();
 
-  const publicKeyPoint = p256.getPublicKey(privateKeyBytes, compressed);
-  const publicKey = bytesToHex(publicKeyPoint);
+  // Pad private key to 64 characters (matches key-generator-main)
+  const privateKey = keyPair.getPrivate("hex").padStart(64, "0");
 
-  return { privateKey, publicKey };
+  // Get public key in requested format
+  const publicKey = keyPair.getPublic(compressed, "hex");
+
+
+  return {
+    privateKey,
+    publicKey,
+  };
 }
 
 /**
@@ -32,8 +41,10 @@ export function derivePublicKeyFromPrivate(privateKeyHex: string): {
 } {
   const privateKeyBytes = bytesFromHex(privateKeyHex);
 
-  const compressed = Buffer.from(p256.getPublicKey(privateKeyBytes, true));
-  const uncompressed = Buffer.from(p256.getPublicKey(privateKeyBytes, false));
+    const ec = new EC("p256");
+    const key = ec.keyFromPrivate(privateKeyHex, "hex");
+    const compressed = bytesFromHex(key.getPublic(true, "hex"));
+    const uncompressed = bytesFromHex(key.getPublic(false, "hex"));
 
   return { compressed, uncompressed };
 }
@@ -90,7 +101,8 @@ export function uncompressPublicKey(compressedKey: Buffer): Buffer {
   }
 
   // Use noble/curves to decode the point and get uncompressed format
-  const point = p256.ProjectivePoint.fromHex(compressedKey);
+  const ec = new EC("p256");
+  const point = ec.curve.decodeFrom(compressedKey);
   const uncompressed = point.toRawBytes(false); // false = uncompressed
 
   return Buffer.from(uncompressed);
