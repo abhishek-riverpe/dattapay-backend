@@ -43,6 +43,7 @@ class ZynkService {
 
     const updatedUser = await userRepository.update(userId, {
       zynkEntityId: response.data.entityId,
+      accountStatus: "PENDING",
     });
 
     return updatedUser;
@@ -55,7 +56,10 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     const response = await zynkRepository.startKyc(user.zynkEntityId);
@@ -70,7 +74,10 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     const response = await zynkRepository.getKycStatus(user.zynkEntityId);
@@ -85,14 +92,19 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (user.zynkFundingAccountId) {
       throw new Error(409, "User already has a funding account");
     }
 
-    const response = await zynkRepository.createFundingAccount(user.zynkEntityId);
+    const response = await zynkRepository.createFundingAccount(
+      user.zynkEntityId
+    );
 
     const updatedUser = await prismaClient.$transaction(async (tx) => {
       return tx.user.update({
@@ -115,11 +127,17 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(400, "User does not have a funding account. Create funding account first.");
+      throw new Error(
+        400,
+        "User does not have a funding account. Create funding account first."
+      );
     }
 
     const response = await zynkRepository.getFundingAccount(
@@ -137,11 +155,17 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(400, "User does not have a funding account. Create funding account first.");
+      throw new Error(
+        400,
+        "User does not have a funding account. Create funding account first."
+      );
     }
 
     const response = await zynkRepository.activateFundingAccount(
@@ -159,11 +183,17 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new Error(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(400, "User does not have a funding account. Create funding account first.");
+      throw new Error(
+        400,
+        "User does not have a funding account. Create funding account first."
+      );
     }
 
     const response = await zynkRepository.deactivateFundingAccount(

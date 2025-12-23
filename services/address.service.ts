@@ -37,7 +37,6 @@ class AddressService {
     if (existingAddress) {
       throw new Error(409, "User already has an address");
     }
-
     return addressRepository.create(data);
   }
 

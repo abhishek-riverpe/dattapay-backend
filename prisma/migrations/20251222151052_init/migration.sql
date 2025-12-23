@@ -1,15 +1,20 @@
+-- CreateEnum
+CREATE TYPE "AccountStatus" AS ENUM ('INITIAL', 'ACTIVE', 'PENDING', 'REJECTED');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
     "firstName" TEXT NOT NULL,
     "clerkUserId" TEXT NOT NULL,
     "zynkEntityId" TEXT,
+    "zynkFundingAccountId" TEXT,
     "lastName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phoneNumberPrefix" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
     "nationality" TEXT NOT NULL,
     "dateOfBirth" TIMESTAMP(3) NOT NULL,
+    "accountStatus" "AccountStatus" NOT NULL DEFAULT 'INITIAL',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

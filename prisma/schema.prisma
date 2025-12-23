@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id                   Int             @id @default(autoincrement())
+  id                   Int           @id @default(autoincrement())
   firstName            String
   clerkUserId          String
   zynkEntityId         String?
   zynkFundingAccountId String?
   lastName             String
-  email                String          @unique
+  email                String        @unique
   phoneNumberPrefix    String
   phoneNumber          String
   nationality          String
   dateOfBirth          DateTime
+  accountStatus        AccountStatus @default(INITIAL)
   address              Address?
   wallet               Wallet?
   walletSessions       WalletSession[]
@@ -101,4 +102,10 @@ enum SessionStatus {
   VERIFIED
   EXPIRED
   USED
+}
+enum AccountStatus {
+  INITIAL
+  ACTIVE
+  PENDING
+  REJECTED
 }
