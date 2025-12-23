@@ -248,7 +248,7 @@ class WalletService {
 
     // Get account data from response
     const accountData = submitAccountResponse.data.account;
-    if (!accountData || !accountData?.address) {
+    if (!accountData?.address) {
       throw new CustomError(500, "Account creation failed: no account data returned");
     }
 
