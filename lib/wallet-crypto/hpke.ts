@@ -16,7 +16,7 @@ export interface DecryptedCredentials {
 function uint8ArrayFromHexString(hex: string): Uint8Array {
   const matches = hex.match(/.{1,2}/g);
   if (!matches) throw new Error("Invalid hex string");
-  return new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
+  return new Uint8Array(matches.map((byte) => Number.parseInt(byte, 16)));
 }
 
 /**
@@ -96,7 +96,7 @@ export async function decryptCredentialBundle(
 
   const plaintext = await recipientCtx.open(
     ciphertextBuf.buffer.slice(ciphertextBuf.byteOffset, ciphertextBuf.byteOffset + ciphertextBuf.byteLength) as ArrayBuffer,
-    aad.buffer.slice(aad.byteOffset, aad.byteOffset + aad.byteLength) as ArrayBuffer
+    aad.buffer.slice(aad.byteOffset, aad.byteOffset + aad.byteLength)
   );
 
   // Convert plaintext to private key hex
