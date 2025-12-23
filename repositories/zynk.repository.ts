@@ -124,13 +124,14 @@ interface ZynkGetFundingAccountResponse {
 class ZynkRepository {
   async checkEmailExists(email: string): Promise<boolean> {
     try {
-      await zynkClient.get(`/api/v1/transformer/entity/email/${email}`);
-      return true; // 200 response means email exists
+      const encodedEmail = encodeURIComponent(email);
+      await zynkClient.get(`/api/v1/transformer/entity/email/${encodedEmail}`);
+      return true;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        return false; // 404 means email not found
+        return false;
       }
-      throw new Error(500, "Failed to check email with Zynk ");
+      throw new Error(500, "Failed to check email");
     }
   }
 
@@ -154,7 +155,7 @@ class ZynkRepository {
         throw new Error(error.response.status, "API request failed");
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new Error(500, "Failed to connect to API");
     }
   }
 
@@ -167,7 +168,7 @@ class ZynkRepository {
 
     try {
       const response = await zynkClient.post<ZynkKycResponse>(
-        `/api/v1/transformer/entity/kyc/${entityId}/${routingId}`
+        `/api/v1/transformer/entity/kyc/${encodeURIComponent(entityId)}/${routingId}`
       );
       return response.data;
     } catch (error) {
@@ -194,7 +195,7 @@ class ZynkRepository {
   async getKycStatus(entityId: string): Promise<ZynkKycStatusResponse> {
     try {
       const response = await zynkClient.get<ZynkKycStatusResponse>(
-        `/api/v1/transformer/entity/kyc/${entityId}`
+        `/api/v1/transformer/entity/kyc/${encodeURIComponent(entityId)}`
       );
       return response.data;
     } catch (error) {
@@ -225,7 +226,7 @@ class ZynkRepository {
 
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${entityId}/create/funding_account/${jurisdictionId}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/create/funding_account/${jurisdictionId}`
       );
       return response.data;
     } catch (error) {
@@ -254,7 +255,7 @@ class ZynkRepository {
   ): Promise<ZynkGetFundingAccountResponse> {
     try {
       const response = await zynkClient.get<ZynkGetFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${entityId}/funding_account/${accountId}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -280,7 +281,7 @@ class ZynkRepository {
   ): Promise<ZynkCreateFundingAccountResponse> {
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${entityId}/activate/funding_account/${accountId}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/activate/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -309,7 +310,7 @@ class ZynkRepository {
   ): Promise<ZynkCreateFundingAccountResponse> {
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${entityId}/deactivate/funding_account/${accountId}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/deactivate/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {

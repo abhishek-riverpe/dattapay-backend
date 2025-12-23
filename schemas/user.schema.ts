@@ -1,4 +1,5 @@
 import Joi from "joi";
+import type { AccountStatus } from "../generated/prisma/enums";
 
 export const createUserSchema = Joi.object({
   clerkUserId: Joi.string().min(1).required().messages({
@@ -118,7 +119,7 @@ export type CreateUserInput = {
 
 export type UpdateUserInput = Partial<CreateUserInput> & {
   zynkEntityId?: string;
-  accountStatus?: string;
+  accountStatus?: AccountStatus;
 };
 
 export type UserIdParam = {
