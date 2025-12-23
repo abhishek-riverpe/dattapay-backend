@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug Bun",
+      "program": "${workspaceFolder}/index.ts",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "watchMode": false,
+      "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug Bun (Watch Mode)",
+      "program": "${workspaceFolder}/index.ts",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "watchMode": true,
+      "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "type": "bun",
+      "request": "attach",
+      "name": "Attach to Bun",
+      "url": "ws://localhost:6499/",
+      "internalConsoleOptions": "openOnSessionStart"
+    }
+  ]
+}

@@ -20,12 +20,15 @@ export default async function auth(
     const decoded = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY as string,
     });
-
     const user = await userService.getByClerkUserId(decoded.sub);
     (req as AuthRequest).user = user;
 
     next();
-  } catch {
-    throw new Error(401, "Invalid or expired token.");
+  } catch (error) {
+    if (error instanceof Error) {
+      next(new Error(401, error.message));
+    } else {
+      next(new Error(401, "Invalid or expired token."));
+    }
   }
 }

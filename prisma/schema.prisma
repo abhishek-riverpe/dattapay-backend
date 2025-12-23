@@ -21,8 +21,10 @@ model User {
   dateOfBirth          DateTime
   accountStatus        AccountStatus @default(INITIAL)
   address              Address?
-  created_at           DateTime      @default(now())
-  updated_at           DateTime      @updatedAt
+  wallet               Wallet?
+  walletSessions       WalletSession[]
+  created_at           DateTime        @default(now())
+  updated_at           DateTime        @updatedAt
 
   @@map("users")
 }
@@ -44,6 +46,63 @@ model Address {
   @@map("addresses")
 }
 
+model Wallet {
+  id           Int           @id @default(autoincrement())
+  userId       Int           @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zynkWalletId String        @unique
+  walletName   String        @default("Primary Wallet")
+  chain        String        @default("SOLANA")
+  status       WalletStatus  @default(ACTIVE)
+  account      WalletAccount?
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  @@map("wallets")
+}
+
+model WalletAccount {
+  id            Int      @id @default(autoincrement())
+  walletId      Int      @unique
+  wallet        Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  address       String   @unique
+  curve         String   @default("CURVE_ED25519")
+  pathFormat    String   @default("PATH_FORMAT_BIP32")
+  path          String
+  addressFormat String   @default("ADDRESS_FORMAT_SOLANA")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("wallet_accounts")
+}
+
+model WalletSession {
+  id                Int           @id @default(autoincrement())
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otpId             String        @unique
+  sessionPublicKey  String?
+  sessionPrivateKey String?
+  status            SessionStatus @default(PENDING)
+  expiresAt         DateTime?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@map("wallet_sessions")
+}
+
+enum WalletStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SessionStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  USED
+}
 enum AccountStatus {
   INITIAL
   ACTIVE
