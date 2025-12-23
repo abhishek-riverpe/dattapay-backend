@@ -1,5 +1,5 @@
 import { P256_ORDER } from "./utils";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import elliptic from "elliptic";
 const EC = elliptic.ec;
 
@@ -82,9 +82,9 @@ export function signPayload(
   const jsonString = JSON.stringify(stampObj);
   const base64 = Buffer.from(jsonString).toString("base64");
   const base64Url = base64
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");    
 
 
   return base64Url;
@@ -147,9 +147,9 @@ export function signPayloadWithDetails(
   const jsonString = JSON.stringify(stamp);
   const base64 = Buffer.from(jsonString).toString("base64");
   const signatureB64Url = base64
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 
   return {
     signature: signatureB64Url,

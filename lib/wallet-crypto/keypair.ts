@@ -39,7 +39,6 @@ export function derivePublicKeyFromPrivate(privateKeyHex: string): {
   compressed: Buffer;
   uncompressed: Buffer;
 } {
-  const privateKeyBytes = bytesFromHex(privateKeyHex);
 
     const ec = new EC("p256");
     const key = ec.keyFromPrivate(privateKeyHex, "hex");
