@@ -64,4 +64,3 @@ class UserRepository {
 }
 
 export default new UserRepository();
-export { prismaClient };

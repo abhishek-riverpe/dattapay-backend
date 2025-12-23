@@ -25,7 +25,7 @@ export default async function auth(
     (req as AuthRequest).user = user;
 
     next();
-  } catch (error) {
+  } catch {
     throw new Error(401, "Invalid or expired token.");
   }
 }
