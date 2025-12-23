@@ -10,7 +10,7 @@ import {
 import type { VerifySessionInput, CreateWalletInput } from "../schemas/wallet.schema";
 
 // Session expiry in minutes (from env or default 15)
-const SESSION_EXPIRY_MINUTES = parseInt(
+const SESSION_EXPIRY_MINUTES = Number.parseInt(
   process.env.WALLET_SESSION_EXPIRY_MINUTES || "15",
   10
 );
@@ -45,12 +45,14 @@ class WalletService {
       otpId = response.data.otpId;
     } catch (error) {
       // If already registered, just initiate OTP
-      const errorMessage =
-        error instanceof CustomError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : String(error);
+      let errorMessage: string;
+      if (error instanceof CustomError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = String(error);
+      }
 
       if (
         errorMessage.includes("already has a registered") ||
@@ -246,7 +248,7 @@ class WalletService {
 
     // Get account data from response
     const accountData = submitAccountResponse.data.account;
-    if (!accountData || !accountData.address) {
+    if (!accountData || !accountData?.address) {
       throw new CustomError(500, "Account creation failed: no account data returned");
     }
 

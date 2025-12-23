@@ -25,6 +25,10 @@ export default async function auth(
 
     next();
   } catch (error) {
-    throw new Error(401, "Invalid or expired token.");
+    if (error instanceof Error) {
+      next(new Error(401, error.message));
+    } else {
+      next(new Error(401, "Invalid or expired token."));
+    }
   }
 }

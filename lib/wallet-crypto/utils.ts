@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import bs58check from "bs58check";
 
 /**
@@ -42,14 +42,14 @@ export function sha256Hex(input: string): string {
  */
 export function toBase64Url(s: string): string {
   const b64 = Buffer.from(s, "utf-8").toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
 /**
  * Convert Base64URL to regular string
  */
 export function fromBase64Url(s: string): string {
-  let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  let b64 = s.replaceAll("-", "+").replaceAll("_", "/");
   while (b64.length % 4 !== 0) {
     b64 += "=";
   }
