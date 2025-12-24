@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import express from "express";
 import APIResponse from "../lib/APIResponse";
@@ -25,8 +25,8 @@ function verifyWebhookSignature(
   signatureHeader: string,
   secret: string
 ): boolean {
-  const match = signatureHeader.match(/^(\d+):(.+)$/);
-  if (!match || !match[1] || !match[2]) return false;
+  const match = /^(\d+):(.+)$/.exec(signatureHeader);
+  if (!match?.[1] || !match?.[2]) return false;
 
   const timestamp = match[1];
   const signature = match[2];
