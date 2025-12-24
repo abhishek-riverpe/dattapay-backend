@@ -29,6 +29,13 @@ class UserRepository {
     });
   }
 
+  async findByZynkEntityId(zynkEntityId: string) {
+    return prismaClient.user.findFirst({
+      where: { zynkEntityId },
+      include: { address: true },
+    });
+  }
+
   async create(data: CreateUserInput) {
     return prismaClient.user.create({
       data,

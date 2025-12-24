@@ -8,10 +8,12 @@ import admin from "./middlewares/admin";
 
 import error from "./middlewares/error";
 import router from "./routes";
+import webhooks from "./routes/webhook.routes";
 
 dotenv.config();
 
 const app = express();
+app.use("/api", webhooks);
 
 app.use(helmet());
 app.use(cors());
