@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { Request, Response } from "express";
 import express from "express";
 import APIResponse from "../lib/APIResponse";
@@ -19,7 +20,48 @@ type KYCEvent = {
   };
 };
 
+function verifyWebhookSignature(
+  payload: object,
+  signatureHeader: string,
+  secret: string
+): boolean {
+  const match = signatureHeader.match(/^(\d+):(.+)$/);
+  if (!match || !match[1] || !match[2]) return false;
+
+  const timestamp = match[1];
+  const signature = match[2];
+  const body = JSON.stringify({ ...payload, signedAt: timestamp });
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(body)
+    .digest("base64");
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, "base64"),
+      Buffer.from(expectedSignature, "base64")
+    );
+  } catch {
+    return false;
+  }
+}
+
 router.post("/webhook", async (req: Request, res: Response) => {
+  const signatureHeader = req.headers["z-webhook-signature"];
+  const secret = process.env.ZYNK_WEBHOOK_SECRET;
+
+  if (!secret) {
+    throw new Error(500, "Webhook secret not configured");
+  }
+
+  if (!signatureHeader || typeof signatureHeader !== "string") {
+    throw new Error(401, "Missing webhook signature");
+  }
+
+  if (!verifyWebhookSignature(req.body, signatureHeader, secret)) {
+    throw new Error(401, "Invalid webhook signature");
+  }
+
   const body: KYCEvent = req.body;
   if (body.eventCategory !== "kyc") return;
   if (body.eventStatus !== "approved" && body.eventObject.status !== "approved")
