@@ -8,23 +8,25 @@ datasource db {
 }
 
 model User {
-  id                   Int           @id @default(autoincrement())
+  id                   Int               @id @default(autoincrement())
   firstName            String
   clerkUserId          String
   zynkEntityId         String?
   zynkFundingAccountId String?
   lastName             String
-  email                String        @unique
+  email                String            @unique
   phoneNumberPrefix    String
   phoneNumber          String
   nationality          String
   dateOfBirth          DateTime
-  accountStatus        AccountStatus @default(INITIAL)
+  accountStatus        AccountStatus     @default(INITIAL)
   address              Address?
   wallet               Wallet?
   walletSessions       WalletSession[]
-  created_at           DateTime        @default(now())
-  updated_at           DateTime        @updatedAt
+  externalAccounts     ExternalAccount[]
+  teleport             Teleport?
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
 
   @@map("users")
 }
@@ -90,6 +92,48 @@ model WalletSession {
 
   @@index([userId, status])
   @@map("wallet_sessions")
+}
+
+model ExternalAccount {
+  id                    Int                   @id @default(autoincrement())
+  userId                Int
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zynkExternalAccountId String?               @unique
+  walletAddress         String
+  label                 String?
+  status                ExternalAccountStatus @default(ACTIVE)
+  teleports             Teleport[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+
+  @@unique([userId, walletAddress])
+  @@index([userId, status])
+  @@map("external_accounts")
+}
+
+model Teleport {
+  id                Int              @id @default(autoincrement())
+  userId            Int              @unique
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalAccountId Int
+  externalAccount   ExternalAccount  @relation(fields: [externalAccountId], references: [id], onDelete: Cascade)
+  zynkTeleportId    String?          @unique
+  status            TeleportStatus   @default(ACTIVE)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+
+  @@map("teleports")
+}
+
+enum ExternalAccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TeleportStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum WalletStatus {

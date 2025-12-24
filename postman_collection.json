@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DattaPay API",
-    "description": "API collection for DattaPay Server - User, Address, Zynk, and Wallet endpoints. All endpoints use authenticated user from JWT token.",
+    "description": "API collection for DattaPay Server - User, Address, Zynk, Wallet, External Account, and Teleport endpoints. All endpoints use authenticated user from JWT token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -660,6 +660,213 @@
               ]
             },
             "description": "Retrieves transaction history for the user's wallet. Returns array of transactions with hash, type, status, timestamp, from, to, amount, tokenSymbol, and fee. Supports pagination with limit and offset. No OTP required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "External Accounts",
+      "description": "External account (blockchain wallet) management endpoints - uses authenticated user from JWT. Requires Zynk entity.",
+      "item": [
+        {
+          "name": "Create External Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"0x1234567890abcdef1234567890abcdef12345678\",\n  \"label\": \"My MetaMask Wallet\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/external-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["external-accounts"]
+            },
+            "description": "Creates an external account (blockchain wallet) for the authenticated user. User must have a Zynk entity. The wallet is registered with Zynk API. walletAddress is required, label is optional."
+          }
+        },
+        {
+          "name": "List External Accounts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/external-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["external-accounts"]
+            },
+            "description": "Retrieves all external accounts for the authenticated user. Returns array of external accounts with id, walletAddress, label, status, and timestamps."
+          }
+        },
+        {
+          "name": "Get External Account by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/external-accounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["external-accounts", "1"]
+            },
+            "description": "Retrieves a specific external account by ID for the authenticated user. Returns 404 if not found or not owned by user."
+          }
+        },
+        {
+          "name": "Delete External Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/external-accounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["external-accounts", "1"]
+            },
+            "description": "Deletes an external account by ID for the authenticated user. Also removes the account from Zynk. Returns 404 if not found or not owned by user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teleport",
+      "description": "Teleport management endpoints - links funding account to external account via Zynk. Requires Zynk entity and funding account.",
+      "item": [
+        {
+          "name": "Create Teleport",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalAccountId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teleport",
+              "host": ["{{baseUrl}}"],
+              "path": ["teleport"]
+            },
+            "description": "Creates a teleport linking the user's funding account to an external account. User must have Zynk entity and funding account. Each user can only have one teleport."
+          }
+        },
+        {
+          "name": "Get Teleport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teleport",
+              "host": ["{{baseUrl}}"],
+              "path": ["teleport"]
+            },
+            "description": "Retrieves the teleport for the authenticated user. Returns teleport details including the linked external account."
+          }
+        },
+        {
+          "name": "Update Teleport",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalAccountId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teleport",
+              "host": ["{{baseUrl}}"],
+              "path": ["teleport"]
+            },
+            "description": "Updates the teleport destination by changing the external account. Creates a new teleport in Zynk with the new external account."
           }
         }
       ]
