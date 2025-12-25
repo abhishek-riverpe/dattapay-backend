@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DattaPay API",
-    "description": "API collection for DattaPay Server - User, Address, Zynk, Wallet, External Account, and Teleport endpoints. All endpoints use authenticated user from JWT token.",
+    "description": "API collection for DattaPay Server - User, Address, Zynk, Wallet, External Account, Teleport, and Passkey endpoints. All endpoints use authenticated user from JWT token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -867,6 +867,45 @@
               "path": ["teleport"]
             },
             "description": "Updates the teleport destination by changing the external account. Creates a new teleport in Zynk with the new external account."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passkey",
+      "description": "Passkey registration endpoints - registers passkey authenticator with Zynk. Requires Zynk entity.",
+      "item": [
+        {
+          "name": "Register Passkey",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"publicKey\": \"your-public-key\",\n  \"privateKey\": \"your-private-key\",\n  \"passkeyData\": {\n    \"authenticatorName\": \"My Authenticator\",\n    \"challenge\": \"challenge-string\",\n    \"attestation\": {\n      \"credentialId\": \"credential-id\",\n      \"clientDataJson\": \"client-data-json\",\n      \"attestationObject\": \"attestation-object\",\n      \"transports\": [\"internal\"]\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/passkey",
+              "host": ["{{baseUrl}}"],
+              "path": ["passkey"]
+            },
+            "description": "Registers a passkey authenticator for the authenticated user. User must have a Zynk entity. Prepares and submits passkey registration to Zynk API."
           }
         }
       ]

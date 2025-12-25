@@ -13,7 +13,7 @@ import webhooks from "./routes/webhook.routes";
 dotenv.config();
 
 const app = express();
-app.use("/api", webhooks);
+
 
 app.use(helmet());
 app.use(cors());
@@ -28,6 +28,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/api", webhooks);
 app.use("/api", admin, router);
 app.use(error);
 

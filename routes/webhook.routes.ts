@@ -4,7 +4,7 @@ import express from "express";
 import APIResponse from "../lib/APIResponse";
 import Error from "../lib/Error";
 import userRepository from "../repositories/user.repository";
-import zynkRepository from "../repositories/zynk.repository";
+import zynkService from "../services/zynk.service";
 
 const router = express.Router();
 
@@ -72,7 +72,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   );
   if (!user) throw new Error(404, "User not found");
   await userRepository.update(user.id, { accountStatus: "ACTIVE" });
-  await zynkRepository.createFundingAccount(body.eventObject.entityId);
+  await zynkService.createFundingAccount(user.id);
   res.status(200).send(new APIResponse(true, "Success"));
 });
 
