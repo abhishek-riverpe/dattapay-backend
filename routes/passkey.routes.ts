@@ -30,8 +30,9 @@ router.post("/", async (req, res, next) => {
     if (!user.zynkEntityId) throw new Error(404, "User not found");
 
     const body: RequestBody = req.body;
+    const entityId = encodeURIComponent(user.zynkEntityId);
     const prepareRes = await zynkClient.post(
-      `/api/v1/wallets/${user.zynkEntityId}/prepare-passkey-registration`,
+      `/api/v1/wallets/${entityId}/prepare-passkey-registration`,
       body.passkeyData
     );
 

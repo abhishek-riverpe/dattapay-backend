@@ -11,8 +11,12 @@ export const sha256 = async (input: string): Promise<string> => {
 
 // Base64URL encoding for strings
 export const toBase64Url = (str: string): string => {
-  const b64 = btoa(unescape(encodeURIComponent(str)));
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  let b64 = btoa(unescape(encodeURIComponent(str)));
+  b64 = b64.replace(/\+/g, "-").replace(/\//g, "_");
+  while (b64.endsWith("=")) {
+    b64 = b64.slice(0, -1);
+  }
+  return b64;
 };
 
 export const signPayloadWithApiKey = async (
