@@ -111,7 +111,7 @@ class WalletService {
       signature,
     });
 
-    if (!response.data.account || !response.data.account.address) {
+    if (!response.data.account?.address) {
       throw new CustomError(500, "Account creation failed");
     }
 
