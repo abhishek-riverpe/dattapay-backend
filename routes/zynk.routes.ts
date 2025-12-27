@@ -24,4 +24,9 @@ router.post(
   zynkController.deactivateFundingAccount as RequestHandler
 );
 
+router.post(
+  "register-primary-auth",
+  zynkController.registerPrimaryAuth as RequestHandler
+);
+
 export default router;

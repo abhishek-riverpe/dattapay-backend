@@ -332,7 +332,36 @@ class ZynkRepository {
       throw new Error(500, "Failed to connect to Zynk API");
     }
   }
+
+  async registerPrimaryAuth(entityId: string, publicKey: string): Promise<ZynkErrorResponse> {
+    try {
+      const response = await zynkClient.post<ZynkErrorResponse>(
+        `/api/v1/wallets/${encodeURIComponent(entityId)}/register-auth`,
+        {
+          "authType": "API_Key",
+          "authPayload": {
+              "apiKeyName": "Primary Auth",
+              "curveType": "API_KEY_CURVE_P256",
+              "publicKey": publicKey,
+              "expirationSeconds": "31536000" // 1 year
+          }
+      }
+      );
+      return response.data;
+    }
+    catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const zynkError = error.response.data as ZynkErrorResponse;
+        throw new Error(zynkError.error.code, zynkError.error.message);
+      }
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.status || 500, "Failed to connect to Zynk API");
+      }
+      throw new Error(500, "Failed to connect to Zynk API");
+    }
+  }
 }
+
 
 export default new ZynkRepository();
 export type {

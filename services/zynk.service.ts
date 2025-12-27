@@ -19,6 +19,10 @@ class ZynkService {
       throw new Error(409, "User already has a Zynk entity");
     }
 
+    if (!user.publicKey) {
+      throw new Error(400, "User does not have a public key");
+    }
+
     const entityData: ZynkEntityData = {
       type: "individual",
       firstName: user.firstName,
@@ -46,6 +50,7 @@ class ZynkService {
       accountStatus: "PENDING",
     });
 
+    await zynkRepository.registerPrimaryAuth(response.data.entityId, user.publicKey);
     return updatedUser;
   }
 
@@ -203,6 +208,25 @@ class ZynkService {
 
     return response.data.data;
   }
+
+  async registerPrimaryAuth(userId: number) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error(404, "User not found");
+    }
+
+    if (!user.zynkEntityId) {
+      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+    }
+
+    if (!user.publicKey) {
+      throw new Error(400, "User does not have a public key");
+    }
+  
+    const response = await zynkRepository.registerPrimaryAuth(user.zynkEntityId, user.publicKey);
+    return response;
+  }
+
 }
 
 export default new ZynkService();
