@@ -19,6 +19,12 @@ export const createUserSchema = Joi.object({
     "any.required": "Last name is required",
   }),
 
+  publicKey: Joi.string().min(1).max(100).required().messages({
+    "string.empty": "Public key cannot be empty",
+    "string.max": "Public key cannot exceed 100 characters",
+    "any.required": "Public key is required",
+  }),
+
   email: Joi.string().email().required().messages({
     "string.empty": "Email cannot be empty",
     "string.email": "Please provide a valid email address",
@@ -111,6 +117,7 @@ export type CreateUserInput = {
   firstName: string;
   lastName: string;
   email: string;
+  publicKey: string;
   phoneNumberPrefix: string;
   phoneNumber: string;
   nationality: string;
