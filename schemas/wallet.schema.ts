@@ -20,10 +20,14 @@ export const verifySessionSchema = Joi.object({
 // Wallet Schemas
 // ============================================
 
-export const createWalletSchema = Joi.object({
-  walletName: Joi.string().min(1).max(100).optional().messages({
-    "string.empty": "Wallet name cannot be empty",
-    "string.max": "Wallet name cannot exceed 100 characters",
+export const submitWalletSchema = Joi.object({
+  payloadId: Joi.string().required().messages({
+    "string.empty": "Payload ID cannot be empty",
+    "any.required": "Payload ID is required",
+  }),
+  signature: Joi.string().required().messages({
+    "string.empty": "Signature cannot be empty",
+    "any.required": "Signature is required",
   }),
 });
 
@@ -50,10 +54,6 @@ export const getTransactionsQuerySchema = Joi.object({
 // Type Exports
 // ============================================
 
-export type VerifySessionInput = {
-  otpId: string;
-  otpCode: string;
-};
 
 export type CreateWalletInput = {
   walletName?: string;

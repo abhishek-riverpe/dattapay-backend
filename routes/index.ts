@@ -6,15 +6,13 @@ import wallets from "./wallet.routes";
 import externalAccounts from "./external-accounts.routes";
 import teleport from "./teleport.routes";
 import auth from "../middlewares/auth";
-import passkey from "./passkey.routes";
 
 const router = express.Router();
 
 router.use("/users", users);
-router.use("/passkey", auth, passkey);
 router.use("/addresses", auth, addresses);
 router.use("/zynk", auth, zynk);
-router.use("/wallets", auth, wallets);
+router.use("/wallet", auth, wallets);
 router.use("/external-accounts", auth, externalAccounts);
 router.use("/teleport", auth, teleport);
 

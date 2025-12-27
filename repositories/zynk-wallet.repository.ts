@@ -23,28 +23,6 @@ interface RegisterAuthResponse {
   };
 }
 
-// Initiate OTP
-interface InitiateOtpResponse {
-  success: boolean;
-  data: {
-    otpId: string;
-  };
-}
-
-// Start Session
-interface StartSessionRequest {
-  otpId: string;
-  otpCode: string;
-  publicKey: string; // Ephemeral public key (uncompressed, 130 hex chars)
-}
-
-interface StartSessionResponse {
-  success: boolean;
-  data: {
-    credentialBundle: string; // HPKE encrypted bundle
-  };
-}
-
 // Prepare Wallet - entityId goes in URL path (matches FastAPI)
 interface PrepareWalletRequest {
   walletName: string;
@@ -209,42 +187,6 @@ class ZynkWalletRepository {
   }
 
   /**
-   * Initiate OTP for wallet operations
-   */
-  async initiateOtp(entityId: string): Promise<InitiateOtpResponse> {
-    try {
-      const response = await zynkClient.post<InitiateOtpResponse>(
-        `/api/v1/wallets/${entityId}/initiate-otp`
-      );
-      return response.data;
-    } catch (error) {
-      this.handleError(error, "Failed to initiate OTP");
-    }
-  }
-
-  /**
-   * Start session with OTP verification and HPKE handshake
-   * Returns encrypted credential bundle
-   */
-  async startSession(
-    entityId: string,
-    data: StartSessionRequest
-  ): Promise<StartSessionResponse> {
-    try {
-      const response = await zynkClient.post<StartSessionResponse>(
-        `/api/v1/wallets/${entityId}/start-session`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        throw new Error(401, "Invalid or expired OTP code");
-      }
-      this.handleError(error, "Failed to start session");
-    }
-  }
-
-  /**
    * Prepare wallet creation - get payload to sign
    * POST /api/v1/wallets/{entityId}/create/prepare
    */
@@ -386,9 +328,6 @@ class ZynkWalletRepository {
 export default new ZynkWalletRepository();
 export type {
   RegisterAuthResponse,
-  InitiateOtpResponse,
-  StartSessionRequest,
-  StartSessionResponse,
   PrepareWalletRequest,
   PrepareWalletResponse,
   SubmitWalletRequest,

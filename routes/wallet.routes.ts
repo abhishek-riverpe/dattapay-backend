@@ -4,20 +4,22 @@ import walletController from "../controllers/wallet.controller";
 
 const router = express.Router();
 
-// Session management
-router.post(
-  "/session/initiate",
-  walletController.initiateSession as RequestHandler
-);
-router.post(
-  "/session/verify",
-  walletController.verifySession as RequestHandler
-);
+// [POST] /api/wallet/prepare Request:{}, Response:{payloadId, payloadToSign}
+router.post("/prepare", walletController.prepareWallet as RequestHandler);
 
-// Wallet operations
-router.post("/", walletController.createWallet as RequestHandler);
+// [POST] /api/wallet/submit Request:{payloadId, signature}, Response:{message}
+router.post("/submit", walletController.submitWallet as RequestHandler);
+
+// [POST] /api/wallet/accounts/prepare Request: {}, Response:{payloadId, payloadToSign}
+router.post("/accounts/prepare", walletController.prepareAccount as RequestHandler);
+
+// [POST] /api/wallet/accounts/submit Request:{payloadId, signature}, Response:{message}
+router.post("/accounts/submit", walletController.submitAccount as RequestHandler);
+
+// [GET]  /api/wallet Response: {walletId, walletAddress, chain, walletName, status, balances}
 router.get("/", walletController.getWallet as RequestHandler);
-router.get("/balances", walletController.getBalances as RequestHandler);
+
+// [GET]  /api/wallet/transactions Request:{limit, offset}, Response:{transactions}
 router.get("/transactions", walletController.getTransactions as RequestHandler);
 
 export default router;
