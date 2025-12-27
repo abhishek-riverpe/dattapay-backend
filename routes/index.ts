@@ -12,7 +12,7 @@ const router = express.Router();
 router.use("/users", users);
 router.use("/addresses", auth, addresses);
 router.use("/zynk", auth, zynk);
-router.use("/wallets", auth, wallets);
+router.use("/wallet", auth, wallets);
 router.use("/external-accounts", auth, externalAccounts);
 router.use("/teleport", auth, teleport);
 

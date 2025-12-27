@@ -486,10 +486,10 @@
     },
     {
       "name": "Wallets",
-      "description": "Wallet management endpoints - uses authenticated user from JWT. Requires completed KYC.",
+      "description": "Wallet management endpoints - uses authenticated user from JWT. Requires completed KYC. Wallet creation uses prepare/submit flow where client signs payload.",
       "item": [
         {
-          "name": "Initiate Session (Send OTP)",
+          "name": "Prepare Wallet",
           "request": {
             "method": "POST",
             "header": [
@@ -505,15 +505,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/wallets/session/initiate",
+              "raw": "{{baseUrl}}/wallet/prepare",
               "host": ["{{baseUrl}}"],
-              "path": ["wallets", "session", "initiate"]
+              "path": ["wallet", "prepare"]
             },
-            "description": "Initiates wallet session by sending OTP to user's registered email. User must have completed KYC. Returns otpId for verification."
+            "description": "Initiates wallet creation. User must have completed KYC and not have an existing wallet. Returns payloadId and payloadToSign for client to sign."
           }
         },
         {
-          "name": "Verify Session (Verify OTP)",
+          "name": "Submit Wallet",
           "request": {
             "method": "POST",
             "header": [
@@ -535,18 +535,42 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"otpId\": \"otp_xxxxxxxxxxxxx\",\n  \"otpCode\": \"123456\"\n}"
+              "raw": "{\n  \"payloadId\": \"pay_abc123xyz\",\n  \"signature\": \"0xabcdef1234567890...\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/wallets/session/verify",
+              "raw": "{{baseUrl}}/wallet/submit",
               "host": ["{{baseUrl}}"],
-              "path": ["wallets", "session", "verify"]
+              "path": ["wallet", "submit"]
             },
-            "description": "Verifies OTP and establishes session for wallet operations. Session is valid for 15 minutes. Returns sessionId and expiresAt."
+            "description": "Completes wallet creation with signed payload. Takes payloadId from prepare step and client signature. Creates wallet in database and returns wallet details."
           }
         },
         {
-          "name": "Create Wallet",
+          "name": "Prepare Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-token",
+                "value": "{{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/accounts/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "accounts", "prepare"]
+            },
+            "description": "Initiates account creation for an existing wallet. User must have a wallet without an account. Returns payloadId and payloadToSign for client to sign."
+          }
+        },
+        {
+          "name": "Submit Account",
           "request": {
             "method": "POST",
             "header": [
@@ -568,14 +592,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"walletName\": \"My Wallet\"\n}"
+              "raw": "{\n  \"payloadId\": \"pay_acc456def\",\n  \"signature\": \"0xfedcba0987654321...\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/wallets",
+              "raw": "{{baseUrl}}/wallet/accounts/submit",
               "host": ["{{baseUrl}}"],
-              "path": ["wallets"]
+              "path": ["wallet", "accounts", "submit"]
             },
-            "description": "Creates a wallet for the authenticated user. Requires active session from OTP verification. walletName is optional (defaults to 'Primary Wallet'). If wallet already exists, returns existing wallet. Each user can only have one wallet."
+            "description": "Completes account creation with signed payload. Takes payloadId from prepare step and client signature. Creates account in database with address, curve, path, and format details."
           }
         },
         {
@@ -595,35 +619,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/wallets",
+              "raw": "{{baseUrl}}/wallet",
               "host": ["{{baseUrl}}"],
-              "path": ["wallets"]
+              "path": ["wallet"]
             },
-            "description": "Retrieves the wallet for the authenticated user including account details (address, chain, status). No OTP required."
-          }
-        },
-        {
-          "name": "Get Wallet Balances",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-token",
-                "value": "{{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "x-auth-token",
-                "value": "{{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/wallets/balances",
-              "host": ["{{baseUrl}}"],
-              "path": ["wallets", "balances"]
-            },
-            "description": "Retrieves token balances for the user's wallet. Returns array of balances with tokenAddress, symbol, name, decimals, balance, and usdValue. No OTP required."
+            "description": "Retrieves the wallet for the authenticated user including account details (address, chain, curve, path, status)."
           }
         },
         {
@@ -643,9 +643,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/wallets/transactions?limit=20&offset=0",
+              "raw": "{{baseUrl}}/wallet/transactions?limit=20&offset=0",
               "host": ["{{baseUrl}}"],
-              "path": ["wallets", "transactions"],
+              "path": ["wallet", "transactions"],
               "query": [
                 {
                   "key": "limit",
@@ -659,7 +659,7 @@
                 }
               ]
             },
-            "description": "Retrieves transaction history for the user's wallet. Returns array of transactions with hash, type, status, timestamp, from, to, amount, tokenSymbol, and fee. Supports pagination with limit and offset. No OTP required."
+            "description": "Retrieves transaction history for the user's wallet. Returns wallet summary and array of transactions with hash, type, status, timestamp, from, to, amount, tokenSymbol, and fee. Supports pagination with limit and offset."
           }
         }
       ]
