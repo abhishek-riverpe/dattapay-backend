@@ -103,6 +103,8 @@ model ExternalAccount {
   zynkExternalAccountId String?               @unique
   walletAddress         String
   label                 String?
+  type                  String                @default("withdrawal")
+  walletId              String?
   status                ExternalAccountStatus @default(ACTIVE)
   teleports             Teleport[]
   created_at            DateTime              @default(now())

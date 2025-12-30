@@ -13,6 +13,8 @@ interface CreateExternalAccountInput {
   walletAddress: string;
   label?: string;
   zynkExternalAccountId?: string;
+  type?: string;
+  walletId?: string;
 }
 
 interface ZynkExternalAccountData {
@@ -20,6 +22,7 @@ interface ZynkExternalAccountData {
   type: string;
   ownershipType: string;
   wallet: {
+    walletId?: string;
     walletAddress: string;
   };
 }
@@ -99,6 +102,8 @@ class ExternalAccountsRepository {
         walletAddress: data.walletAddress,
         label: data.label,
         zynkExternalAccountId: data.zynkExternalAccountId,
+        type: data.type || "withdrawal",
+        walletId: data.walletId,
         status: "ACTIVE",
       },
     });
@@ -131,7 +136,8 @@ class ExternalAccountsRepository {
 
   async createExternalAccountInZynk(
     entityId: string,
-    walletAddress: string
+    walletAddress: string,
+    options?: { type?: string; walletId?: string }
   ): Promise<ZynkExternalAccountResponse> {
     const jurisdictionId = process.env.SOLANA_JURISDICTION_ID;
 
@@ -141,9 +147,10 @@ class ExternalAccountsRepository {
 
     const payload: ZynkExternalAccountData = {
       jurisdictionID: jurisdictionId,
-      type: "deposit",
+      type: options?.type || "withdrawal",
       ownershipType: "first_party",
       wallet: {
+        ...(options?.walletId && { walletId: options.walletId }),
         walletAddress: walletAddress,
       },
     };

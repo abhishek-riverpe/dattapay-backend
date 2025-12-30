@@ -28,7 +28,8 @@ class ExternalAccountsService {
 
     const zynkResponse = await externalAccountsRepository.createExternalAccountInZynk(
       user.zynkEntityId,
-      data.walletAddress
+      data.walletAddress,
+      { type: data.type, walletId: data.walletId }
     );
 
     const externalAccount = await externalAccountsRepository.create({
@@ -36,6 +37,8 @@ class ExternalAccountsService {
       walletAddress: data.walletAddress,
       label: data.label,
       zynkExternalAccountId: zynkResponse.data.accountId,
+      type: data.type,
+      walletId: data.walletId,
     });
 
     return externalAccount;
