@@ -95,6 +95,16 @@ class ExternalAccountsRepository {
     });
   }
 
+  async findNonCustodialWallet(userId: number) {
+    return prismaClient.externalAccount.findFirst({
+      where: {
+        userId,
+        type: "non_custodial_wallet",
+        deleted_at: null,
+      },
+    });
+  }
+
   async create(data: CreateExternalAccountInput) {
     return prismaClient.externalAccount.create({
       data: {
