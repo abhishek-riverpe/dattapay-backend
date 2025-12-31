@@ -6,6 +6,7 @@ import type { ZynkEntityData } from "../repositories/zynk.repository";
 
 class ZynkService {
   async createEntity(userId: number) {
+    // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -13,10 +14,6 @@ class ZynkService {
 
     if (!user.address) {
       throw new Error(400, "User must have an address to create a Zynk entity");
-    }
-
-    if (user.zynkEntityId) {
-      throw new Error(409, "User already has a Zynk entity");
     }
 
     if (!user.publicKey) {
@@ -43,11 +40,32 @@ class ZynkService {
       },
     };
 
+    // Call external API first (cannot be rolled back)
     const response = await zynkRepository.createEntity(entityData);
 
-    const updatedUser = await userRepository.update(userId, {
-      zynkEntityId: response.data.entityId,
-      accountStatus: "PENDING",
+    // Wrap check + update in transaction to prevent race conditions
+    const updatedUser = await prismaClient.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: userId },
+        include: { address: true },
+      });
+
+      if (!currentUser) {
+        throw new Error(404, "User not found");
+      }
+
+      if (currentUser.zynkEntityId) {
+        throw new Error(409, "User already has a Zynk entity");
+      }
+
+      return tx.user.update({
+        where: { id: userId },
+        data: {
+          zynkEntityId: response.data.entityId,
+          accountStatus: "PENDING",
+        },
+        include: { address: true },
+      });
     });
 
     await zynkRepository.registerPrimaryAuth(response.data.entityId, user.publicKey);
@@ -91,6 +109,7 @@ class ZynkService {
   }
 
   async createFundingAccount(userId: number) {
+    // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -103,15 +122,26 @@ class ZynkService {
       );
     }
 
-    if (user.zynkFundingAccountId) {
-      throw new Error(409, "User already has a funding account");
-    }
-
+    // Call external API first (cannot be rolled back)
     const response = await zynkRepository.createFundingAccount(
       user.zynkEntityId
     );
 
+    // Wrap check + update in transaction to prevent race conditions
     const updatedUser = await prismaClient.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: userId },
+        include: { address: true },
+      });
+
+      if (!currentUser) {
+        throw new Error(404, "User not found");
+      }
+
+      if (currentUser.zynkFundingAccountId) {
+        throw new Error(409, "User already has a funding account");
+      }
+
       return tx.user.update({
         where: { id: userId },
         data: { zynkFundingAccountId: response.data.data.id },

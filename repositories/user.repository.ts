@@ -56,18 +56,6 @@ class UserRepository {
       where: { id },
     });
   }
-
-  async updateWithTransaction(
-    id: number,
-    data: UpdateUserInput,
-    tx: typeof prismaClient
-  ) {
-    return tx.user.update({
-      where: { id },
-      data,
-      include: { address: true },
-    });
-  }
 }
 
 export default new UserRepository();

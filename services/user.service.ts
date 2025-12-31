@@ -1,4 +1,5 @@
 import Error from "../lib/Error";
+import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 
@@ -32,35 +33,65 @@ class UserService {
   }
 
   async create(data: CreateUserInput) {
-    const existingUser = await userRepository.findByEmail(data.email);
-    if (existingUser) {
-      throw new Error(409, "User with this email already exists");
-    }
-    return userRepository.create(data);
-  }
+    return prismaClient.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { email: data.email },
+      });
 
-  async update(id: number, data: UpdateUserInput) {
-    const user = await userRepository.findById(id);
-    if (!user) {
-      throw new Error(404, "User not found");
-    }
-
-    if (data.email && data.email !== user.email) {
-      const existingUser = await userRepository.findByEmail(data.email);
       if (existingUser) {
         throw new Error(409, "User with this email already exists");
       }
-    }
 
-    return userRepository.update(id, data);
+      return tx.user.create({
+        data,
+        include: { address: true },
+      });
+    });
+  }
+
+  async update(id: number, data: UpdateUserInput) {
+    return prismaClient.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id },
+        include: { address: true },
+      });
+
+      if (!user) {
+        throw new Error(404, "User not found");
+      }
+
+      if (data.email && data.email !== user.email) {
+        const existingUser = await tx.user.findUnique({
+          where: { email: data.email },
+        });
+
+        if (existingUser) {
+          throw new Error(409, "User with this email already exists");
+        }
+      }
+
+      return tx.user.update({
+        where: { id },
+        data,
+        include: { address: true },
+      });
+    });
   }
 
   async delete(id: number) {
-    const user = await userRepository.findById(id);
-    if (!user) {
-      throw new Error(404, "User not found");
-    }
-    return userRepository.delete(id);
+    return prismaClient.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new Error(404, "User not found");
+      }
+
+      return tx.user.delete({
+        where: { id },
+      });
+    });
   }
 }
 
