@@ -15,9 +15,7 @@
   },
   "scripts": {
     "start": "bun run index.ts",
-    "dev": "bun --watch run index.ts",
-    "debug": "bun --inspect run index.ts",
-    "debug:wait": "bun --inspect-wait run index.ts"
+    "dev": "bun --watch run index.ts"
   },
   "dependencies": {
     "@clerk/express": "^1.7.59",
