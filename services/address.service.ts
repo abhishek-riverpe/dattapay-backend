@@ -11,7 +11,7 @@ class AddressService {
     return addressRepository.findAll();
   }
 
-  async getById(id: number) {
+  async getById(id: string) {
     const address = await addressRepository.findById(id);
     if (!address) {
       throw new Error(404, "Address not found");
@@ -19,7 +19,7 @@ class AddressService {
     return address;
   }
 
-  async getByUserId(userId: number) {
+  async getByUserId(userId: string) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
       throw new Error(404, "Address not found for this user");
@@ -52,7 +52,7 @@ class AddressService {
     });
   }
 
-  async update(id: number, data: UpdateAddressInput) {
+  async update(id: string, data: UpdateAddressInput) {
     const address = await addressRepository.findById(id);
     if (!address) {
       throw new Error(404, "Address not found");
@@ -60,7 +60,7 @@ class AddressService {
     return addressRepository.update(id, data);
   }
 
-  async updateByUserId(userId: number, data: UpdateAddressInput) {
+  async updateByUserId(userId: string, data: UpdateAddressInput) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
       throw new Error(404, "Address not found for this user");
@@ -68,7 +68,7 @@ class AddressService {
     return addressRepository.updateByUserId(userId, data);
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     const address = await addressRepository.findById(id);
     if (!address) {
       throw new Error(404, "Address not found");
@@ -76,7 +76,7 @@ class AddressService {
     return addressRepository.delete(id);
   }
 
-  async deleteByUserId(userId: number) {
+  async deleteByUserId(userId: string) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
       throw new Error(404, "Address not found for this user");

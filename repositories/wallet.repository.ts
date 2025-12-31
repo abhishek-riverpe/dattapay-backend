@@ -6,14 +6,14 @@ import type { WalletStatus } from "../generated/prisma/client";
 // ============================================
 
 interface CreateWalletInput {
-  userId: number;
+  userId: string;
   zynkWalletId: string;
   walletName?: string;
   chain?: string;
 }
 
 interface CreateWalletAccountInput {
-  walletId: number;
+  walletId: string;
   address: string;
   curve?: string;
   pathFormat?: string;
@@ -30,14 +30,14 @@ class WalletRepository {
   // Wallet Operations
   // ============================================
 
-  async findWalletByUserId(userId: number) {
+  async findWalletByUserId(userId: string) {
     return prismaClient.wallet.findUnique({
       where: { userId },
       include: { account: true },
     });
   }
 
-  async findWalletById(id: number) {
+  async findWalletById(id: string) {
     return prismaClient.wallet.findUnique({
       where: { id },
       include: { account: true },
@@ -63,7 +63,7 @@ class WalletRepository {
     });
   }
 
-  async updateWalletStatus(id: number, status: WalletStatus) {
+  async updateWalletStatus(id: string, status: WalletStatus) {
     return prismaClient.wallet.update({
       where: { id },
       data: { status },
@@ -75,7 +75,7 @@ class WalletRepository {
   // Wallet Account Operations
   // ============================================
 
-  async findAccountByWalletId(walletId: number) {
+  async findAccountByWalletId(walletId: string) {
     return prismaClient.walletAccount.findUnique({
       where: { walletId },
     });

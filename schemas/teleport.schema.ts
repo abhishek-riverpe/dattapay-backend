@@ -5,10 +5,9 @@ import Joi from "joi";
 // ============================================
 
 export const createTeleportSchema = Joi.object({
-  externalAccountId: Joi.number().integer().positive().required().messages({
-    "number.base": "External account ID must be a number",
-    "number.integer": "External account ID must be an integer",
-    "number.positive": "External account ID must be a positive number",
+  externalAccountId: Joi.string().uuid().required().messages({
+    "string.base": "External account ID must be a string",
+    "string.guid": "External account ID must be a valid UUID",
     "any.required": "External account ID is required",
   }),
 });
@@ -18,10 +17,9 @@ export const createTeleportSchema = Joi.object({
 // ============================================
 
 export const updateTeleportSchema = Joi.object({
-  externalAccountId: Joi.number().integer().positive().required().messages({
-    "number.base": "External account ID must be a number",
-    "number.integer": "External account ID must be an integer",
-    "number.positive": "External account ID must be a positive number",
+  externalAccountId: Joi.string().uuid().required().messages({
+    "string.base": "External account ID must be a string",
+    "string.guid": "External account ID must be a valid UUID",
     "any.required": "External account ID is required",
   }),
 });
@@ -31,9 +29,9 @@ export const updateTeleportSchema = Joi.object({
 // ============================================
 
 export type CreateTeleportInput = {
-  externalAccountId: number;
+  externalAccountId: string;
 };
 
 export type UpdateTeleportInput = {
-  externalAccountId: number;
+  externalAccountId: string;
 };

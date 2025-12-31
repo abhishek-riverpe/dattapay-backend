@@ -9,7 +9,7 @@ import type { ExternalAccountStatus } from "../generated/prisma/client";
 // ============================================
 
 interface CreateExternalAccountInput {
-  userId: number;
+  userId: string;
   walletAddress: string;
   label?: string;
   zynkExternalAccountId?: string;
@@ -63,7 +63,7 @@ class ExternalAccountsRepository {
   // Local Database Operations
   // ============================================
 
-  async findById(id: number, userId: number) {
+  async findById(id: string, userId: string) {
     return prismaClient.externalAccount.findFirst({
       where: {
         id,
@@ -73,7 +73,7 @@ class ExternalAccountsRepository {
     });
   }
 
-  async findByWalletAddress(walletAddress: string, userId: number) {
+  async findByWalletAddress(walletAddress: string, userId: string) {
     return prismaClient.externalAccount.findFirst({
       where: {
         walletAddress,
@@ -83,7 +83,7 @@ class ExternalAccountsRepository {
     });
   }
 
-  async findAllByUserId(userId: number) {
+  async findAllByUserId(userId: string) {
     return prismaClient.externalAccount.findMany({
       where: {
         userId,
@@ -95,7 +95,7 @@ class ExternalAccountsRepository {
     });
   }
 
-  async findNonCustodialWallet(userId: number) {
+  async findNonCustodialWallet(userId: string) {
     return prismaClient.externalAccount.findFirst({
       where: {
         userId,
@@ -119,21 +119,21 @@ class ExternalAccountsRepository {
     });
   }
 
-  async updateStatus(id: number, status: ExternalAccountStatus) {
+  async updateStatus(id: string, status: ExternalAccountStatus) {
     return prismaClient.externalAccount.update({
       where: { id },
       data: { status },
     });
   }
 
-  async updateZynkAccountId(id: number, zynkExternalAccountId: string) {
+  async updateZynkAccountId(id: string, zynkExternalAccountId: string) {
     return prismaClient.externalAccount.update({
       where: { id },
       data: { zynkExternalAccountId },
     });
   }
 
-  async softDelete(id: number) {
+  async softDelete(id: string) {
     return prismaClient.externalAccount.update({
       where: { id },
       data: { deleted_at: new Date() },

@@ -5,7 +5,7 @@ import zynkRepository from "../repositories/zynk.repository";
 import type { ZynkEntityData } from "../repositories/zynk.repository";
 
 class ZynkService {
-  async createEntity(userId: number) {
+  async createEntity(userId: string) {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
@@ -72,7 +72,7 @@ class ZynkService {
     return updatedUser;
   }
 
-  async startKyc(userId: number) {
+  async startKyc(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -90,7 +90,7 @@ class ZynkService {
     return response.data;
   }
 
-  async getKycStatus(userId: number) {
+  async getKycStatus(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -108,7 +108,7 @@ class ZynkService {
     return response.data;
   }
 
-  async createFundingAccount(userId: number) {
+  async createFundingAccount(userId: string) {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
@@ -155,7 +155,7 @@ class ZynkService {
     };
   }
 
-  async getFundingAccount(userId: number) {
+  async getFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -183,7 +183,7 @@ class ZynkService {
     return response.data;
   }
 
-  async activateFundingAccount(userId: number) {
+  async activateFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -211,7 +211,7 @@ class ZynkService {
     return response.data.data;
   }
 
-  async deactivateFundingAccount(userId: number) {
+  async deactivateFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -239,7 +239,7 @@ class ZynkService {
     return response.data.data;
   }
 
-  async registerPrimaryAuth(userId: number) {
+  async registerPrimaryAuth(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");

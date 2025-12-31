@@ -6,7 +6,7 @@ import transferRepository from "../repositories/transfer.repository";
 import type { SimulateTransferInput, TransferInput } from "../schemas/transfer.schema";
 
 class TransferService {
-  async simulateTransfer(userId: number, data: SimulateTransferInput) {
+  async simulateTransfer(userId: string, data: SimulateTransferInput) {
     // Get user and validate zynkEntityId
     const user = await userRepository.findById(userId);
     if (!user) {

@@ -11,14 +11,14 @@ class AddressRepository {
     });
   }
 
-  async findById(id: number) {
+  async findById(id: string) {
     return prismaClient.address.findUnique({
       where: { id },
       include: { user: true },
     });
   }
 
-  async findByUserId(userId: number) {
+  async findByUserId(userId: string) {
     return prismaClient.address.findUnique({
       where: { userId },
       include: { user: true },
@@ -32,7 +32,7 @@ class AddressRepository {
     });
   }
 
-  async update(id: number, data: UpdateAddressInput) {
+  async update(id: string, data: UpdateAddressInput) {
     return prismaClient.address.update({
       where: { id },
       data,
@@ -40,7 +40,7 @@ class AddressRepository {
     });
   }
 
-  async updateByUserId(userId: number, data: UpdateAddressInput) {
+  async updateByUserId(userId: string, data: UpdateAddressInput) {
     return prismaClient.address.update({
       where: { userId },
       data,
@@ -48,13 +48,13 @@ class AddressRepository {
     });
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     return prismaClient.address.delete({
       where: { id },
     });
   }
 
-  async deleteByUserId(userId: number) {
+  async deleteByUserId(userId: string) {
     return prismaClient.address.delete({
       where: { userId },
     });
