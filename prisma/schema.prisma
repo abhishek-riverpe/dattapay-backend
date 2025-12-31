@@ -24,7 +24,6 @@ model User {
   accountStatus        AccountStatus     @default(INITIAL)
   address              Address?
   wallet               Wallet?
-  walletSessions       WalletSession[]
   externalAccounts     ExternalAccount[]
   teleport             Teleport?
   created_at           DateTime          @default(now())
@@ -80,22 +79,6 @@ model WalletAccount {
   @@map("wallet_accounts")
 }
 
-model WalletSession {
-  id                Int           @id @default(autoincrement())
-  userId            Int
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  otpId             String        @unique
-  sessionPublicKey  String?
-  sessionPrivateKey String?
-  status            SessionStatus @default(PENDING)
-  expiresAt         DateTime?
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
-
-  @@index([userId, status])
-  @@map("wallet_sessions")
-}
-
 model ExternalAccount {
   id                    Int                   @id @default(autoincrement())
   userId                Int
@@ -145,12 +128,6 @@ enum WalletStatus {
   INACTIVE
 }
 
-enum SessionStatus {
-  PENDING
-  VERIFIED
-  EXPIRED
-  USED
-}
 enum AccountStatus {
   INITIAL
   ACTIVE
