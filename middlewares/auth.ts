@@ -13,15 +13,15 @@ export default async function auth(
   res: Response,
   next: NextFunction
 ) {
-  // const token = req.header("x-auth-token") as string;
-  // if (!token) throw new Error(401, "Access denied. No token provided.");
+  const token = req.header("x-auth-token") as string;
+  if (!token) throw new Error(401, "Access denied. No token provided.");
 
   try {
-    // const decoded = await verifyToken(token, {
-    //   secretKey: process.env.CLERK_SECRET_KEY as string,
-    // });
-    // const user = await userService.getByClerkUserId(decoded.sub);
-    const user = await userService.getByClerkUserId("user_37ZWUkytdFjyq2ppOCJHmsghOZ3");
+    const decoded = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY as string,
+    });
+    const user = await userService.getByClerkUserId(decoded.sub);
+    // const user = await userService.getByClerkUserId("user_37ZWUkytdFjyq2ppOCJHmsghOZ3");
     (req as AuthRequest).user = user;
 
     next();
