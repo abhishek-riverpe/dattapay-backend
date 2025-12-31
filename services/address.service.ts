@@ -1,6 +1,6 @@
 import Error from "../lib/Error";
+import prismaClient from "../lib/prisma-client";
 import addressRepository from "../repositories/address.repository";
-import userRepository from "../repositories/user.repository";
 import type {
   CreateAddressInput,
   UpdateAddressInput,
@@ -28,16 +28,28 @@ class AddressService {
   }
 
   async create(data: CreateAddressInput) {
-    const user = await userRepository.findById(data.userId);
-    if (!user) {
-      throw new Error(404, "User not found");
-    }
+    return prismaClient.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: data.userId },
+      });
 
-    const existingAddress = await addressRepository.findByUserId(data.userId);
-    if (existingAddress) {
-      throw new Error(409, "User already has an address");
-    }
-    return addressRepository.create(data);
+      if (!user) {
+        throw new Error(404, "User not found");
+      }
+
+      const existingAddress = await tx.address.findUnique({
+        where: { userId: data.userId },
+      });
+
+      if (existingAddress) {
+        throw new Error(409, "User already has an address");
+      }
+
+      return tx.address.create({
+        data,
+        include: { user: true },
+      });
+    });
   }
 
   async update(id: number, data: UpdateAddressInput) {

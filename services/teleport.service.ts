@@ -1,11 +1,12 @@
 import Error from "../lib/Error";
+import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
 import teleportRepository from "../repositories/teleport.repository";
 import type { CreateTeleportInput, UpdateTeleportInput } from "../schemas/teleport.schema";
 
 class TeleportService {
-  async create(userId: number, data: CreateTeleportInput) {
+  private async validateAndCallZynkApi(userId: number, externalAccountId: number) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -19,13 +20,8 @@ class TeleportService {
       throw new Error(400, "User must have a funding account");
     }
 
-    const existingTeleport = await teleportRepository.findByUserId(userId);
-    if (existingTeleport) {
-      throw new Error(409, "User already has a teleport");
-    }
-
     const externalAccount = await externalAccountsRepository.findById(
-      data.externalAccountId,
+      externalAccountId,
       userId
     );
 
@@ -42,13 +38,30 @@ class TeleportService {
       externalAccount.zynkExternalAccountId
     );
 
-    const teleport = await teleportRepository.create({
-      userId,
-      externalAccountId: data.externalAccountId,
-      zynkTeleportId: zynkResponse.data.teleportId,
-    });
+    return zynkResponse;
+  }
 
-    return teleport;
+  async create(userId: number, data: CreateTeleportInput) {
+    const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
+
+    return prismaClient.$transaction(async (tx) => {
+      const existingTeleport = await tx.teleport.findUnique({
+        where: { userId },
+      });
+
+      if (existingTeleport) {
+        throw new Error(409, "User already has a teleport");
+      }
+
+      return tx.teleport.create({
+        data: {
+          userId,
+          externalAccountId: data.externalAccountId,
+          zynkTeleportId: zynkResponse.data.teleportId,
+        },
+        include: { externalAccount: true },
+      });
+    });
   }
 
   async get(userId: number) {
@@ -66,48 +79,26 @@ class TeleportService {
   }
 
   async update(userId: number, data: UpdateTeleportInput) {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw new Error(404, "User not found");
-    }
+    const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
 
-    if (!user.zynkEntityId) {
-      throw new Error(400, "User must have a Zynk entity");
-    }
+    return prismaClient.$transaction(async (tx) => {
+      const existingTeleport = await tx.teleport.findUnique({
+        where: { userId },
+      });
 
-    if (!user.zynkFundingAccountId) {
-      throw new Error(400, "User must have a funding account");
-    }
+      if (!existingTeleport) {
+        throw new Error(404, "Teleport not found");
+      }
 
-    const existingTeleport = await teleportRepository.findByUserId(userId);
-    if (!existingTeleport) {
-      throw new Error(404, "Teleport not found");
-    }
-
-    const externalAccount = await externalAccountsRepository.findById(
-      data.externalAccountId,
-      userId
-    );
-
-    if (!externalAccount) {
-      throw new Error(404, "External account not found");
-    }
-
-    if (!externalAccount.zynkExternalAccountId) {
-      throw new Error(400, "External account not registered with Zynk");
-    }
-
-    const zynkResponse = await teleportRepository.createTeleportInZynk(
-      user.zynkFundingAccountId,
-      externalAccount.zynkExternalAccountId
-    );
-
-    const teleport = await teleportRepository.update(userId, {
-      externalAccountId: data.externalAccountId,
-      zynkTeleportId: zynkResponse.data.teleportId,
+      return tx.teleport.update({
+        where: { userId },
+        data: {
+          externalAccountId: data.externalAccountId,
+          zynkTeleportId: zynkResponse.data.teleportId,
+        },
+        include: { externalAccount: true },
+      });
     });
-
-    return teleport;
   }
 }
 

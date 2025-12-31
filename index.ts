@@ -14,11 +14,37 @@ dotenv.config();
 
 const app = express();
 
+app.use(
+  helmet({
+    // Prevent XSS attacks
+    xssFilter: true,
 
-app.use(helmet());
+    // Prevent clickjacking
+    frameguard: { action: "deny" },
+
+    // Enforce HTTPS (enable only if you use HTTPS)
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true,
+    },
+
+    // Disable DNS prefetching
+    dnsPrefetchControl: { allow: false },
+
+    // Hide X-Powered-By header
+    hidePoweredBy: true,
+
+    // Prevent MIME-type sniffing
+    noSniff: true,
+
+    // Referrer policy
+    referrerPolicy: { policy: "no-referrer" },
+  })
+);
 
 const allowedOrigins: (string | RegExp)[] = [
-  'https://app.dattapay.com',
+  "https://app.dattapay.com",
   // Expo Go development origins
   /^exp:\/\/.*$/,
   /^http:\/\/localhost(:\d+)?$/,
@@ -26,25 +52,27 @@ const allowedOrigins: (string | RegExp)[] = [
   /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
 
-    const isAllowed = allowedOrigins.some((allowed) =>
-      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
-    );
+      const isAllowed = allowedOrigins.some((allowed) =>
+        allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+      );
 
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'x-auth-token', 'x-api-token'],
-}));
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "x-auth-token", "x-api-token"],
+  })
+);
 
 app.use(
   rateLimit({

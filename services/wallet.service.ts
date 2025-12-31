@@ -1,4 +1,5 @@
 import CustomError from "../lib/Error";
+import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import walletRepository from "../repositories/wallet.repository";
 import zynkWalletRepository from "../repositories/zynk-wallet.repository";
@@ -37,6 +38,7 @@ class WalletService {
   }
 
   async submitWallet(userId: number, payloadId: string, signature: string) {
+    // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new CustomError(404, "User not found");
@@ -46,11 +48,7 @@ class WalletService {
       throw new CustomError(400, "User must complete KYC before creating a wallet");
     }
 
-    const existingWallet = await walletRepository.findWalletByUserId(userId);
-    if (existingWallet) {
-      throw new CustomError(400, "User already has a wallet");
-    }
-
+    // Call external API first (cannot be rolled back)
     const submitWalletResponse = await zynkWalletRepository.submitWallet({
       payloadId,
       signature,
@@ -60,16 +58,26 @@ class WalletService {
       throw new CustomError(500, "Wallet creation failed");
     }
 
-    const wallet = await walletRepository.createWallet(
-      {
-        userId,
-        zynkWalletId: submitWalletResponse.data.walletId,
-        walletName: "My Wallet",
-        chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA",
-      }
-    );
+    // Wrap check + create in transaction to prevent race conditions
+    return prismaClient.$transaction(async (tx) => {
+      const existingWallet = await tx.wallet.findUnique({
+        where: { userId },
+      });
 
-    return wallet;
+      if (existingWallet) {
+        throw new CustomError(400, "User already has a wallet");
+      }
+
+      return tx.wallet.create({
+        data: {
+          userId,
+          zynkWalletId: submitWalletResponse.data.walletId,
+          walletName: "My Wallet",
+          chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA",
+        },
+        include: { account: true },
+      });
+    });
   }
 
   async prepareAccount(userId: number) {
@@ -98,15 +106,13 @@ class WalletService {
   }
 
   async submitAccount(userId: number, payloadId: string, signature: string) {
+    // Initial validation
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
       throw new CustomError(404, "Wallet not found. Please create a wallet first.");
     }
 
-    if (wallet.account) {
-      throw new CustomError(400, "Wallet already has an account");
-    }
-
+    // Call external API first (cannot be rolled back)
     const response = await zynkWalletRepository.submitAccount({
       payloadId,
       signature,
@@ -116,13 +122,31 @@ class WalletService {
       throw new CustomError(500, "Account creation failed");
     }
 
-    const account = await walletRepository.createWalletAccount({
-      walletId: wallet.id,
-      address: response.data.account.address,
-      curve: response.data.account.curve,
-      pathFormat: response.data.account.pathFormat,
-      path: response.data.account.path,
-      addressFormat: response.data.account.addressFormat,
+    // Wrap check + create in transaction to prevent race conditions
+    const account = await prismaClient.$transaction(async (tx) => {
+      const existingWallet = await tx.wallet.findUnique({
+        where: { id: wallet.id },
+        include: { account: true },
+      });
+
+      if (!existingWallet) {
+        throw new CustomError(404, "Wallet not found");
+      }
+
+      if (existingWallet.account) {
+        throw new CustomError(400, "Wallet already has an account");
+      }
+
+      return tx.walletAccount.create({
+        data: {
+          walletId: wallet.id,
+          address: response.data.account.address,
+          curve: response.data.account.curve,
+          pathFormat: response.data.account.pathFormat,
+          path: response.data.account.path,
+          addressFormat: response.data.account.addressFormat,
+        },
+      });
     });
 
     // Add wallet as external account with label "Dattapay Wallet"
