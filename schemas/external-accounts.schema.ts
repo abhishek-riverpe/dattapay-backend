@@ -30,10 +30,9 @@ export const createExternalAccountSchema = Joi.object({
 // ============================================
 
 export const externalAccountIdSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    "number.base": "ID must be a number",
-    "number.integer": "ID must be an integer",
-    "number.positive": "ID must be a positive number",
+  id: Joi.string().uuid().required().messages({
+    "string.base": "ID must be a string",
+    "string.guid": "ID must be a valid UUID",
     "any.required": "ID is required",
   }),
 });
@@ -50,5 +49,5 @@ export type CreateExternalAccountInput = {
 };
 
 export type ExternalAccountIdParam = {
-  id: number;
+  id: string;
 };

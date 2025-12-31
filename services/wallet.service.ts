@@ -7,7 +7,7 @@ import externalAccountsService from "./external-accounts.service";
 
 class WalletService {
 
-  async prepareWallet(userId: number) {
+  async prepareWallet(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new CustomError(404, "User not found");
@@ -37,7 +37,7 @@ class WalletService {
     };
   }
 
-  async submitWallet(userId: number, payloadId: string, signature: string) {
+  async submitWallet(userId: string, payloadId: string, signature: string) {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
@@ -80,7 +80,7 @@ class WalletService {
     });
   }
 
-  async prepareAccount(userId: number) {
+  async prepareAccount(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
       throw new CustomError(404, "Wallet not found. Please create a wallet first.");
@@ -105,7 +105,7 @@ class WalletService {
     };
   }
 
-  async submitAccount(userId: number, payloadId: string, signature: string) {
+  async submitAccount(userId: string, payloadId: string, signature: string) {
     // Initial validation
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
@@ -165,7 +165,7 @@ class WalletService {
     return account;
   }
 
-  async getWallet(userId: number) {
+  async getWallet(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
       throw new CustomError(404, "Wallet not found. Please create a wallet first.");
@@ -175,7 +175,7 @@ class WalletService {
   }
 
   async getTransactions(
-    userId: number,
+    userId: string,
     options?: { limit?: number; offset?: number }
   ) {
     const wallet = await walletRepository.findWalletByUserId(userId);

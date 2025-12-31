@@ -8,13 +8,13 @@ import Error from "../lib/Error";
 // ============================================
 
 interface CreateTeleportInput {
-  userId: number;
-  externalAccountId: number;
+  userId: string;
+  externalAccountId: string;
   zynkTeleportId?: string;
 }
 
 interface UpdateTeleportInput {
-  externalAccountId: number;
+  externalAccountId: string;
   zynkTeleportId: string;
 }
 
@@ -49,7 +49,7 @@ class TeleportRepository {
   // Local Database Operations
   // ============================================
 
-  async findByUserId(userId: number) {
+  async findByUserId(userId: string) {
     return prismaClient.teleport.findUnique({
       where: { userId },
       include: {
@@ -58,7 +58,7 @@ class TeleportRepository {
     });
   }
 
-  async findById(id: number) {
+  async findById(id: string) {
     return prismaClient.teleport.findUnique({
       where: { id },
       include: {
@@ -81,7 +81,7 @@ class TeleportRepository {
     });
   }
 
-  async update(userId: number, data: UpdateTeleportInput) {
+  async update(userId: string, data: UpdateTeleportInput) {
     return prismaClient.teleport.update({
       where: { userId },
       data: {

@@ -41,10 +41,9 @@ export const createAddressSchema = Joi.object({
     "any.required": "Postal code is required",
   }),
 
-  userId: Joi.number().integer().positive().required().messages({
-    "number.base": "User ID must be a number",
-    "number.integer": "User ID must be an integer",
-    "number.positive": "User ID must be a positive number",
+  userId: Joi.string().uuid().required().messages({
+    "string.base": "User ID must be a string",
+    "string.guid": "User ID must be a valid UUID",
     "any.required": "User ID is required",
   }),
 });
@@ -90,10 +89,9 @@ export const updateAddressSchema = Joi.object({
   });
 
 export const addressIdParamSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    "number.base": "Address ID must be a number",
-    "number.integer": "Address ID must be an integer",
-    "number.positive": "Address ID must be a positive number",
+  id: Joi.string().uuid().required().messages({
+    "string.base": "Address ID must be a string",
+    "string.guid": "Address ID must be a valid UUID",
     "any.required": "Address ID is required",
   }),
 });
@@ -106,11 +104,11 @@ export type CreateAddressInput = {
   state: string;
   country: string;
   postalCode: string;
-  userId: number;
+  userId: string;
 };
 
 export type UpdateAddressInput = Partial<Omit<CreateAddressInput, "userId">>;
 
 export type AddressIdParam = {
-  id: number;
+  id: string;
 };

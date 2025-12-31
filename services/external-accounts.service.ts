@@ -5,7 +5,7 @@ import externalAccountsRepository from "../repositories/external-accounts.reposi
 import type { CreateExternalAccountInput } from "../schemas/external-accounts.schema";
 
 class ExternalAccountsService {
-  async create(userId: number, data: CreateExternalAccountInput) {
+  async create(userId: string, data: CreateExternalAccountInput) {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
@@ -53,7 +53,7 @@ class ExternalAccountsService {
     });
   }
 
-  async list(userId: number) {
+  async list(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -64,7 +64,7 @@ class ExternalAccountsService {
     return externalAccounts;
   }
 
-  async getById(userId: number, id: number) {
+  async getById(userId: string, id: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -79,7 +79,7 @@ class ExternalAccountsService {
     return externalAccount;
   }
 
-  async delete(userId: number, id: number) {
+  async delete(userId: string, id: string) {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {

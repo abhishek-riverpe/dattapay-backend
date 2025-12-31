@@ -104,10 +104,9 @@ export const updateUserSchema = Joi.object({
   });
 
 export const userIdParamSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    "number.base": "User ID must be a number",
-    "number.integer": "User ID must be an integer",
-    "number.positive": "User ID must be a positive number",
+  id: Joi.string().uuid().required().messages({
+    "string.base": "User ID must be a string",
+    "string.guid": "User ID must be a valid UUID",
     "any.required": "User ID is required",
   }),
 });
@@ -130,5 +129,5 @@ export type UpdateUserInput = Partial<CreateUserInput> & {
 };
 
 export type UserIdParam = {
-  id: number;
+  id: string;
 };

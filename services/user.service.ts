@@ -8,7 +8,7 @@ class UserService {
     return userRepository.findAll();
   }
 
-  async getById(id: number) {
+  async getById(id: string) {
     const user = await userRepository.findById(id);
     if (!user) {
       throw new Error(404, "User not found");
@@ -49,7 +49,7 @@ class UserService {
     });
   }
 
-  async update(id: number, data: UpdateUserInput) {
+  async update(id: string, data: UpdateUserInput) {
     return prismaClient.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id },
@@ -78,7 +78,7 @@ class UserService {
     });
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     return prismaClient.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id },

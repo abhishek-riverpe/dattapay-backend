@@ -6,7 +6,7 @@ import teleportRepository from "../repositories/teleport.repository";
 import type { CreateTeleportInput, UpdateTeleportInput } from "../schemas/teleport.schema";
 
 class TeleportService {
-  private async validateAndCallZynkApi(userId: number, externalAccountId: number) {
+  private async validateAndCallZynkApi(userId: string, externalAccountId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -41,7 +41,7 @@ class TeleportService {
     return zynkResponse;
   }
 
-  async create(userId: number, data: CreateTeleportInput) {
+  async create(userId: string, data: CreateTeleportInput) {
     const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
 
     return prismaClient.$transaction(async (tx) => {
@@ -64,7 +64,7 @@ class TeleportService {
     });
   }
 
-  async get(userId: number) {
+  async get(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error(404, "User not found");
@@ -78,7 +78,7 @@ class TeleportService {
     return teleport;
   }
 
-  async update(userId: number, data: UpdateTeleportInput) {
+  async update(userId: string, data: UpdateTeleportInput) {
     const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
 
     return prismaClient.$transaction(async (tx) => {

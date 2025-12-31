@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id                   Int               @id @default(autoincrement())
+  id                   String            @id @default(uuid()) @db.Uuid
   firstName            String
   clerkUserId          String
   zynkEntityId         String?
@@ -32,7 +32,7 @@ model User {
 }
 
 model Address {
-  id           Int      @id @default(autoincrement())
+  id           String   @id @default(uuid()) @db.Uuid
   addressLine1 String
   addressLine2 String?
   locality     String
@@ -40,7 +40,7 @@ model Address {
   state        String
   country      String
   postalCode   String
-  userId       Int      @unique
+  userId       String   @unique @db.Uuid
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
@@ -49,8 +49,8 @@ model Address {
 }
 
 model Wallet {
-  id           Int            @id @default(autoincrement())
-  userId       Int            @unique
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @unique @db.Uuid
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   zynkWalletId String         @unique
   walletName   String         @default("Primary Wallet")
@@ -64,8 +64,8 @@ model Wallet {
 }
 
 model WalletAccount {
-  id            Int      @id @default(autoincrement())
-  walletId      Int      @unique
+  id            String   @id @default(uuid()) @db.Uuid
+  walletId      String   @unique @db.Uuid
   wallet        Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
   address       String   @unique
   curve         String   @default("CURVE_ED25519")
@@ -79,8 +79,8 @@ model WalletAccount {
 }
 
 model ExternalAccount {
-  id                    Int                   @id @default(autoincrement())
-  userId                Int
+  id                    String                @id @default(uuid()) @db.Uuid
+  userId                String                @db.Uuid
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   zynkExternalAccountId String?               @unique
   walletAddress         String
@@ -99,10 +99,10 @@ model ExternalAccount {
 }
 
 model Teleport {
-  id                Int             @id @default(autoincrement())
-  userId            Int             @unique
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @unique @db.Uuid
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  externalAccountId Int
+  externalAccountId String          @db.Uuid
   externalAccount   ExternalAccount @relation(fields: [externalAccountId], references: [id], onDelete: Cascade)
   zynkTeleportId    String?         @unique
   status            TeleportStatus  @default(ACTIVE)

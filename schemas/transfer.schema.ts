@@ -5,10 +5,9 @@ import Joi from "joi";
 // ============================================
 
 export const simulateTransferSchema = Joi.object({
-  externalAccountId: Joi.number().integer().positive().required().messages({
-    "number.base": "External account ID must be a number",
-    "number.integer": "External account ID must be an integer",
-    "number.positive": "External account ID must be positive",
+  externalAccountId: Joi.string().uuid().required().messages({
+    "string.base": "External account ID must be a string",
+    "string.guid": "External account ID must be a valid UUID",
     "any.required": "External account ID is required",
   }),
 
@@ -50,7 +49,7 @@ export const transferSchema = Joi.object({
 // ============================================
 
 export type SimulateTransferInput = {
-  externalAccountId: number;
+  externalAccountId: string;
   exactAmountIn?: number;
   exactAmountOut?: number;
   depositMemo?: string;
