@@ -15,6 +15,14 @@ export const createExternalAccountSchema = Joi.object({
     "string.empty": "Label cannot be empty",
     "string.max": "Label cannot exceed 100 characters",
   }),
+
+  type: Joi.string().optional().messages({
+    "string.empty": "Type cannot be empty",
+  }),
+
+  walletId: Joi.string().optional().messages({
+    "string.empty": "Wallet ID cannot be empty",
+  }),
 });
 
 // ============================================
@@ -37,6 +45,8 @@ export const externalAccountIdSchema = Joi.object({
 export type CreateExternalAccountInput = {
   walletAddress: string;
   label?: string;
+  type?: string;
+  walletId?: string;
 };
 
 export type ExternalAccountIdParam = {

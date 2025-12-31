@@ -5,7 +5,10 @@
       "Bash(bun run build)",
       "Bash(bunx tsc:*)",
       "Bash(rm:*)",
-      "Bash(bunx prisma migrate:*)"
+      "Bash(bunx prisma migrate:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ]
   }
 }

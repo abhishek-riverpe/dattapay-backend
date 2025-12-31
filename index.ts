@@ -16,7 +16,35 @@ const app = express();
 
 
 app.use(helmet());
-app.use(cors());
+
+const allowedOrigins: (string | RegExp)[] = [
+  'https://app.dattapay.com',
+  // Expo Go development origins
+  /^exp:\/\/.*$/,
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/,
+  /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.some((allowed) =>
+      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+    );
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'x-auth-token', 'x-api-token'],
+}));
 
 app.use(
   rateLimit({

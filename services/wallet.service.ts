@@ -2,6 +2,7 @@ import CustomError from "../lib/Error";
 import userRepository from "../repositories/user.repository";
 import walletRepository from "../repositories/wallet.repository";
 import zynkWalletRepository from "../repositories/zynk-wallet.repository";
+import externalAccountsService from "./external-accounts.service";
 
 class WalletService {
 
@@ -123,6 +124,19 @@ class WalletService {
       path: response.data.account.path,
       addressFormat: response.data.account.addressFormat,
     });
+
+    // Add wallet as external account with label "Dattapay Wallet"
+    try {
+      await externalAccountsService.create(userId, {
+        walletAddress: account.address,
+        label: "Dattapay Wallet",
+        type: "non_custodial_wallet",
+        walletId: wallet.zynkWalletId,
+      });
+    } catch (error) {
+      console.error("Failed to create external account for wallet:", error);
+      // Continue - don't fail the whole operation
+    }
 
     return account;
   }

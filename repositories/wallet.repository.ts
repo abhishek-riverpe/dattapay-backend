@@ -1,5 +1,5 @@
 import prismaClient from "../lib/prisma-client";
-import type { SessionStatus, WalletStatus } from "../generated/prisma/client";
+import type { WalletStatus } from "../generated/prisma/client";
 
 // ============================================
 // Input Types
@@ -19,18 +19,6 @@ interface CreateWalletAccountInput {
   pathFormat?: string;
   path: string;
   addressFormat?: string;
-}
-
-interface CreateWalletSessionInput {
-  userId: number;
-  otpId: string;
-}
-
-interface UpdateWalletSessionInput {
-  sessionPublicKey?: string;
-  sessionPrivateKey?: string;
-  status?: SessionStatus;
-  expiresAt?: Date;
 }
 
 // ============================================
@@ -147,101 +135,7 @@ class WalletRepository {
       };
     });
   }
-
-  // ============================================
-  // Wallet Session Operations
-  // ============================================
-
-  async findSessionByOtpId(otpId: string) {
-    return prismaClient.walletSession.findUnique({
-      where: { otpId },
-    });
-  }
-
-  async findActiveSessionByUserId(userId: number) {
-    return prismaClient.walletSession.findFirst({
-      where: {
-        userId,
-        status: "VERIFIED",
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        created_at: "desc",
-      },
-    });
-  }
-
-  async createSession(data: CreateWalletSessionInput) {
-    return prismaClient.walletSession.create({
-      data: {
-        userId: data.userId,
-        otpId: data.otpId,
-        status: "PENDING",
-      },
-    });
-  }
-
-  async updateSession(otpId: string, data: UpdateWalletSessionInput) {
-    return prismaClient.walletSession.update({
-      where: { otpId },
-      data,
-    });
-  }
-
-  async updateSessionById(id: number, data: UpdateWalletSessionInput) {
-    return prismaClient.walletSession.update({
-      where: { id },
-      data,
-    });
-  }
-
-  async markSessionAsUsed(otpId: string) {
-    return prismaClient.walletSession.update({
-      where: { otpId },
-      data: { status: "USED" },
-    });
-  }
-
-  async expireOldSessions(userId: number) {
-    return prismaClient.walletSession.updateMany({
-      where: {
-        userId,
-        status: {
-          in: ["PENDING", "VERIFIED"],
-        },
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-      data: {
-        status: "EXPIRED",
-      },
-    });
-  }
-
-  async deleteExpiredSessions(olderThanDays: number = 7) {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
-
-    return prismaClient.walletSession.deleteMany({
-      where: {
-        status: {
-          in: ["EXPIRED", "USED"],
-        },
-        created_at: {
-          lt: cutoffDate,
-        },
-      },
-    });
-  }
 }
 
 export default new WalletRepository();
-export type {
-  CreateWalletInput,
-  CreateWalletAccountInput,
-  CreateWalletSessionInput,
-  UpdateWalletSessionInput,
-};
+export type { CreateWalletInput, CreateWalletAccountInput };
