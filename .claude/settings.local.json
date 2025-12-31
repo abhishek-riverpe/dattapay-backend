@@ -7,7 +7,8 @@
       "Bash(rm:*)",
       "Bash(bunx prisma migrate:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ]
   }
 }
