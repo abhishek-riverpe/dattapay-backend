@@ -1,7 +1,6 @@
 import Error from "../lib/Error";
 import prismaClient from "../lib/prisma-client";
 import addressRepository from "../repositories/address.repository";
-import userRepository from "../repositories/user.repository";
 import type {
   CreateAddressInput,
   UpdateAddressInput,
