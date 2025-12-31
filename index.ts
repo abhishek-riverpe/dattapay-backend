@@ -48,8 +48,8 @@ app.use(cors({
 
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: 15 * 60 * 1000,// 15 minutes
+    max: 30,// 30 requests per 15 minutes
   })
 );
 
