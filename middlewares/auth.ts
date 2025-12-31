@@ -21,7 +21,6 @@ export default async function auth(
       secretKey: process.env.CLERK_SECRET_KEY as string,
     });
     const user = await userService.getByClerkUserId(decoded.sub);
-    // const user = await userService.getByClerkUserId("user_37ZWUkytdFjyq2ppOCJHmsghOZ3");
     (req as AuthRequest).user = user;
 
     next();

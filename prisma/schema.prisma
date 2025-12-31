@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
 }
 
 model User {
@@ -50,16 +49,16 @@ model Address {
 }
 
 model Wallet {
-  id           Int           @id @default(autoincrement())
-  userId       Int           @unique
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  zynkWalletId String        @unique
-  walletName   String        @default("Primary Wallet")
-  chain        String        @default("SOLANA")
-  status       WalletStatus  @default(ACTIVE)
+  id           Int            @id @default(autoincrement())
+  userId       Int            @unique
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zynkWalletId String         @unique
+  walletName   String         @default("Primary Wallet")
+  chain        String         @default("SOLANA")
+  status       WalletStatus   @default(ACTIVE)
   account      WalletAccount?
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
 
   @@map("wallets")
 }
@@ -100,15 +99,15 @@ model ExternalAccount {
 }
 
 model Teleport {
-  id                Int              @id @default(autoincrement())
-  userId            Int              @unique
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                Int             @id @default(autoincrement())
+  userId            Int             @unique
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   externalAccountId Int
-  externalAccount   ExternalAccount  @relation(fields: [externalAccountId], references: [id], onDelete: Cascade)
-  zynkTeleportId    String?          @unique
-  status            TeleportStatus   @default(ACTIVE)
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
+  externalAccount   ExternalAccount @relation(fields: [externalAccountId], references: [id], onDelete: Cascade)
+  zynkTeleportId    String?         @unique
+  status            TeleportStatus  @default(ACTIVE)
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
 
   @@map("teleports")
 }

@@ -16,7 +16,6 @@ export default function admin(req: Request, res: Response, next: NextFunction) {
     );
     if (!tokensMatch) throw new Error(403, "Access denied. Invalid Token.");
   } catch (e) {
-    // timingSafeEqual throws if buffers have different lengths
     throw new Error(403, "Access denied. Invalid Token.");
   }
 
