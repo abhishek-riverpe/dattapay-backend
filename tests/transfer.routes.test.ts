@@ -16,13 +16,8 @@ import {
   validSimulatePayload,
   validSimulatePayloadWithAmountOut,
   validTransferPayload,
-  invalidSimulatePayloadMissingId,
-  invalidSimulatePayloadInvalidUuid,
-  invalidSimulatePayloadMissingAmount,
-  invalidSimulatePayloadNegativeAmount,
-  invalidTransferPayloadMissingExecutionId,
-  invalidTransferPayloadMissingSignature,
-  invalidTransferPayloadEmpty,
+  invalidSimulatePayloads,
+  invalidTransferPayloads,
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/transfer.fixtures";
@@ -172,7 +167,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/simulate")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloadMissingId);
+          .send(invalidSimulatePayloads.missingId);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -186,7 +181,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/simulate")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloadInvalidUuid);
+          .send(invalidSimulatePayloads.invalidUuid);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -198,7 +193,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/simulate")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloadMissingAmount);
+          .send(invalidSimulatePayloads.missingAmount);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -212,7 +207,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/simulate")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloadNegativeAmount);
+          .send(invalidSimulatePayloads.negativeAmount);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -372,7 +367,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/transfer")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloadMissingExecutionId);
+          .send(invalidTransferPayloads.missingExecutionId);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -384,7 +379,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/transfer")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloadMissingSignature);
+          .send(invalidTransferPayloads.missingSignature);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -396,7 +391,7 @@ describe("Transfer Routes", () => {
           .post("/api/transfer/transfer")
           .set("x-api-token", ADMIN_TOKEN)
           .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloadEmpty);
+          .send(invalidTransferPayloads.empty);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);

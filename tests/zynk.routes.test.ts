@@ -7,6 +7,7 @@ import {
   jest,
 } from "@jest/globals";
 import type { Express, Router } from "express";
+import type { Response } from "supertest";
 import request from "supertest";
 import CustomError from "../lib/Error";
 import {
@@ -22,6 +23,31 @@ import {
   mockUser,
 } from "./fixtures/zynk.fixtures";
 import type { TestAppConfig } from "./helpers";
+
+// Response assertion helpers to reduce duplication
+function expectErrorResponse(
+  response: Response,
+  statusCode: number,
+  messageContains?: string
+) {
+  expect(response.status).toBe(statusCode);
+  expect(response.body.success).toBe(false);
+  if (messageContains) {
+    expect(response.body.message).toContain(messageContains);
+  }
+}
+
+function expectSuccessResponse(
+  response: Response,
+  statusCode: number,
+  message?: string
+) {
+  expect(response.status).toBe(statusCode);
+  expect(response.body.success).toBe(true);
+  if (message) {
+    expect(response.body.message).toBe(message);
+  }
+}
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -88,6 +114,14 @@ describe("Zynk Routes", () => {
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
 
+  // Helper to create authenticated request
+  function authRequest(method: "get" | "post", endpoint: string) {
+    return request(app)
+      [method](endpoint)
+      .set("x-api-token", ADMIN_TOKEN)
+      .set("x-auth-token", AUTH_TOKEN);
+  }
+
   // ===========================================
   // Admin Middleware Tests
   // ===========================================
@@ -97,9 +131,7 @@ describe("Zynk Routes", () => {
         .post("/api/zynk/entities")
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Access denied");
+      expectErrorResponse(response, 403, "Access denied");
     });
 
     it("should return 403 when x-api-token is invalid", async () => {
@@ -108,17 +140,13 @@ describe("Zynk Routes", () => {
         .set("x-api-token", "invalid-token")
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 403);
     });
 
     it("should allow access with valid x-api-token", async () => {
       mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
       expect([200, 201]).toContain(response.status);
     });
@@ -133,9 +161,7 @@ describe("Zynk Routes", () => {
         .post("/api/zynk/entities")
         .set("x-api-token", ADMIN_TOKEN);
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("token");
+      expectErrorResponse(response, 401, "token");
     });
 
     it("should return 401 when token verification fails", async () => {
@@ -146,20 +172,71 @@ describe("Zynk Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", "invalid-token");
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
 
     it("should return 401 when user not found for clerk user id", async () => {
       mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
+    });
+  });
+
+  // ===========================================
+  // Common Error Scenarios (Parameterized Tests)
+  // ===========================================
+  describe.each([
+    { method: "post" as const, endpoint: "/api/zynk/entities", mockFn: () => mockCreateEntity, name: "entities" },
+    { method: "post" as const, endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
+    { method: "get" as const, endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
+    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ])("$name - Common Errors", ({ method, endpoint, mockFn }) => {
+    it("should return 404 when user not found", async () => {
+      mockFn().mockRejectedValue(new CustomError(404, "User not found"));
+
+      const response = await authRequest(method, endpoint);
+
+      expectErrorResponse(response, 404, "not found");
+    });
+  });
+
+  describe.each([
+    { method: "post" as const, endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
+    { method: "get" as const, endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
+    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ])("$name - No Zynk Entity", ({ method, endpoint, mockFn }) => {
+    it("should return 400 when user has no Zynk entity", async () => {
+      mockFn().mockRejectedValue(
+        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+      );
+
+      const response = await authRequest(method, endpoint);
+
+      expectErrorResponse(response, 400, "Zynk entity");
+    });
+  });
+
+  describe.each([
+    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ])("$name - No Funding Account", ({ method, endpoint, mockFn }) => {
+    it("should return 400 when user has no funding account", async () => {
+      mockFn().mockRejectedValue(
+        new CustomError(400, "User does not have a funding account. Create funding account first.")
+      );
+
+      const response = await authRequest(method, endpoint);
+
+      expectErrorResponse(response, 400, "funding account");
     });
   });
 
@@ -170,59 +247,28 @@ describe("Zynk Routes", () => {
     it("should return 201 on successful entity creation", async () => {
       mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Zynk entity created successfully");
+      expectSuccessResponse(response, 201, "Zynk entity created successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call createEntity with correct user ID", async () => {
       mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
 
-      await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/zynk/entities");
 
       expect(mockCreateEntity).toHaveBeenCalledWith(mockUser.id);
     });
 
-    it("should return 404 when user not found", async () => {
-      mockCreateEntity.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("not found");
-    });
-
     it("should return 400 when user has no address", async () => {
       mockCreateEntity.mockRejectedValue(
-        new CustomError(
-          400,
-          "User must have an address to create a Zynk entity"
-        )
+        new CustomError(400, "User must have an address to create a Zynk entity")
       );
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("address");
+      expectErrorResponse(response, 400, "address");
     });
 
     it("should return 400 when user has no public key", async () => {
@@ -230,14 +276,9 @@ describe("Zynk Routes", () => {
         new CustomError(400, "User does not have a public key")
       );
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("public key");
+      expectErrorResponse(response, 400, "public key");
     });
 
     it("should return 409 when user already has a Zynk entity", async () => {
@@ -245,14 +286,9 @@ describe("Zynk Routes", () => {
         new CustomError(409, "User already has a Zynk entity")
       );
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("already has");
+      expectErrorResponse(response, 409, "already has");
     });
   });
 
@@ -263,56 +299,18 @@ describe("Zynk Routes", () => {
     it("should return 200 on successful KYC start", async () => {
       mockStartKyc.mockResolvedValue(mockKycData);
 
-      const response = await request(app)
-        .post("/api/zynk/kyc")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/kyc");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("KYC started successfully");
+      expectSuccessResponse(response, 200, "KYC started successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call startKyc with correct user ID", async () => {
       mockStartKyc.mockResolvedValue(mockKycData);
 
-      await request(app)
-        .post("/api/zynk/kyc")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/zynk/kyc");
 
       expect(mockStartKyc).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockStartKyc.mockRejectedValue(new CustomError(404, "User not found"));
-
-      const response = await request(app)
-        .post("/api/zynk/kyc")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockStartKyc.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/kyc")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
     });
   });
 
@@ -323,58 +321,18 @@ describe("Zynk Routes", () => {
     it("should return 200 with KYC status", async () => {
       mockGetKycStatus.mockResolvedValue(mockKycStatus);
 
-      const response = await request(app)
-        .get("/api/zynk/kyc/status")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/zynk/kyc/status");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("KYC status retrieved successfully");
+      expectSuccessResponse(response, 200, "KYC status retrieved successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call getKycStatus with correct user ID", async () => {
       mockGetKycStatus.mockResolvedValue(mockKycStatus);
 
-      await request(app)
-        .get("/api/zynk/kyc/status")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("get", "/api/zynk/kyc/status");
 
       expect(mockGetKycStatus).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockGetKycStatus.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .get("/api/zynk/kyc/status")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockGetKycStatus.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .get("/api/zynk/kyc/status")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
     });
   });
 
@@ -383,66 +341,20 @@ describe("Zynk Routes", () => {
   // ===========================================
   describe("POST /api/zynk/funding-account", () => {
     it("should return 201 on successful funding account creation", async () => {
-      mockCreateFundingAccount.mockResolvedValue(
-        mockCreateFundingAccountResponse
-      );
+      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
 
-      const response = await request(app)
-        .post("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/funding-account");
 
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe(
-        "Funding account created successfully"
-      );
+      expectSuccessResponse(response, 201, "Funding account created successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call createFundingAccount with correct user ID", async () => {
-      mockCreateFundingAccount.mockResolvedValue(
-        mockCreateFundingAccountResponse
-      );
+      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
 
-      await request(app)
-        .post("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/zynk/funding-account");
 
       expect(mockCreateFundingAccount).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockCreateFundingAccount.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockCreateFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
     });
 
     it("should return 409 when user already has a funding account", async () => {
@@ -450,14 +362,9 @@ describe("Zynk Routes", () => {
         new CustomError(409, "User already has a funding account")
       );
 
-      const response = await request(app)
-        .post("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/funding-account");
 
-      expect(response.status).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("already has");
+      expectErrorResponse(response, 409, "already has");
     });
   });
 
@@ -468,78 +375,18 @@ describe("Zynk Routes", () => {
     it("should return 200 with funding account data", async () => {
       mockGetFundingAccount.mockResolvedValue(mockFundingAccount);
 
-      const response = await request(app)
-        .get("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/zynk/funding-account");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe(
-        "Funding account retrieved successfully"
-      );
+      expectSuccessResponse(response, 200, "Funding account retrieved successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call getFundingAccount with correct user ID", async () => {
       mockGetFundingAccount.mockResolvedValue(mockFundingAccount);
 
-      await request(app)
-        .get("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("get", "/api/zynk/funding-account");
 
       expect(mockGetFundingAccount).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockGetFundingAccount.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .get("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockGetFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .get("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
-    });
-
-    it("should return 400 when user has no funding account", async () => {
-      mockGetFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a funding account. Create funding account first."
-        )
-      );
-
-      const response = await request(app)
-        .get("/api/zynk/funding-account")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("funding account");
     });
   });
 
@@ -550,78 +397,18 @@ describe("Zynk Routes", () => {
     it("should return 200 on successful activation", async () => {
       mockActivateFundingAccount.mockResolvedValue(mockActivatedFundingAccount);
 
-      const response = await request(app)
-        .post("/api/zynk/funding-account/activate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/funding-account/activate");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe(
-        "Funding account activated successfully"
-      );
+      expectSuccessResponse(response, 200, "Funding account activated successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call activateFundingAccount with correct user ID", async () => {
       mockActivateFundingAccount.mockResolvedValue(mockActivatedFundingAccount);
 
-      await request(app)
-        .post("/api/zynk/funding-account/activate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/zynk/funding-account/activate");
 
       expect(mockActivateFundingAccount).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockActivateFundingAccount.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/activate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockActivateFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/activate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
-    });
-
-    it("should return 400 when user has no funding account", async () => {
-      mockActivateFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a funding account. Create funding account first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/activate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("funding account");
     });
   });
 
@@ -630,84 +417,20 @@ describe("Zynk Routes", () => {
   // ===========================================
   describe("POST /api/zynk/funding-account/deactivate", () => {
     it("should return 200 on successful deactivation", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(
-        mockDeactivatedFundingAccount
-      );
+      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
 
-      const response = await request(app)
-        .post("/api/zynk/funding-account/deactivate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/funding-account/deactivate");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe(
-        "Funding account deactivated successfully"
-      );
+      expectSuccessResponse(response, 200, "Funding account deactivated successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should call deactivateFundingAccount with correct user ID", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(
-        mockDeactivatedFundingAccount
-      );
+      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
 
-      await request(app)
-        .post("/api/zynk/funding-account/deactivate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/zynk/funding-account/deactivate");
 
       expect(mockDeactivateFundingAccount).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it("should return 404 when user not found", async () => {
-      mockDeactivateFundingAccount.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/deactivate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockDeactivateFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a Zynk entity. Create entity first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/deactivate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Zynk entity");
-    });
-
-    it("should return 400 when user has no funding account", async () => {
-      mockDeactivateFundingAccount.mockRejectedValue(
-        new CustomError(
-          400,
-          "User does not have a funding account. Create funding account first."
-        )
-      );
-
-      const response = await request(app)
-        .post("/api/zynk/funding-account/deactivate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("funding account");
     });
   });
 
@@ -715,51 +438,29 @@ describe("Zynk Routes", () => {
   // Response Format Tests
   // ===========================================
   describe("Response Format", () => {
-    it("should always return success boolean", async () => {
+    beforeEach(() => {
       mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
-
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(typeof response.body.success).toBe("boolean");
     });
 
-    it("should always return message string", async () => {
-      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
+    it("should always return success boolean and message string", async () => {
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
+      expect(typeof response.body.success).toBe("boolean");
       expect(typeof response.body.message).toBe("string");
     });
 
     it("should return JSON content type", async () => {
-      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
-
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
       expect(response.headers["content-type"]).toMatch(/application\/json/);
     });
 
     it("should return error response for internal server errors", async () => {
-      mockCreateEntity.mockRejectedValue(
-        new Error("Database connection failed")
-      );
+      mockCreateEntity.mockRejectedValue(new Error("Database connection failed"));
 
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/zynk/entities");
 
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 500);
     });
   });
 });

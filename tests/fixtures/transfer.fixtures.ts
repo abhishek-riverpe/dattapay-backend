@@ -107,55 +107,50 @@ export const mockDestinationAccountWithoutZynk = {
   zynkExternalAccountId: null,
 };
 
+// Common test constants
+const DEFAULT_AMOUNT = 100.5;
+const DEFAULT_MEMO = "Test transfer";
+const VALID_EXECUTION_ID = "cexec_a8ddf280_ac0b_43c0_bf35_9b3192feb059";
+const VALID_SIGNATURE = "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...";
+
+// UUID constants (defined early for use in payloads)
+export const VALID_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440001";
+export const NON_EXISTENT_UUID = "990e8400-e29b-41d4-a716-446655440000";
+
 // Valid simulate transfer payload
 export const validSimulatePayload = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
-  exactAmountIn: 100.5,
-  depositMemo: "Test transfer",
+  externalAccountId: VALID_EXTERNAL_ACCOUNT_UUID,
+  exactAmountIn: DEFAULT_AMOUNT,
+  depositMemo: DEFAULT_MEMO,
 };
 
 // Valid simulate payload with exactAmountOut
 export const validSimulatePayloadWithAmountOut = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
+  externalAccountId: VALID_EXTERNAL_ACCOUNT_UUID,
   exactAmountOut: 99.5,
-  depositMemo: "Test transfer",
+  depositMemo: DEFAULT_MEMO,
 };
 
 // Invalid simulate payloads
-export const invalidSimulatePayloadMissingId = {
-  exactAmountIn: 100.5,
-};
-
-export const invalidSimulatePayloadInvalidUuid = {
-  externalAccountId: "invalid-uuid",
-  exactAmountIn: 100.5,
-};
-
-export const invalidSimulatePayloadMissingAmount = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
-};
-
-export const invalidSimulatePayloadNegativeAmount = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
-  exactAmountIn: -50,
-};
+export const invalidSimulatePayloads = {
+  missingId: { exactAmountIn: DEFAULT_AMOUNT },
+  invalidUuid: { externalAccountId: "invalid-uuid", exactAmountIn: DEFAULT_AMOUNT },
+  missingAmount: { externalAccountId: VALID_EXTERNAL_ACCOUNT_UUID },
+  negativeAmount: { externalAccountId: VALID_EXTERNAL_ACCOUNT_UUID, exactAmountIn: -50 },
+} as const;
 
 // Valid transfer payload
 export const validTransferPayload = {
-  executionId: "cexec_a8ddf280_ac0b_43c0_bf35_9b3192feb059",
-  signature: "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...",
+  executionId: VALID_EXECUTION_ID,
+  signature: VALID_SIGNATURE,
 };
 
 // Invalid transfer payloads
-export const invalidTransferPayloadMissingExecutionId = {
-  signature: "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...",
-};
-
-export const invalidTransferPayloadMissingSignature = {
-  executionId: "cexec_a8ddf280_ac0b_43c0_bf35_9b3192feb059",
-};
-
-export const invalidTransferPayloadEmpty = {};
+export const invalidTransferPayloads = {
+  missingExecutionId: { signature: VALID_SIGNATURE },
+  missingSignature: { executionId: VALID_EXECUTION_ID },
+  empty: {},
+} as const;
 
 // Mock Zynk simulate response
 export const mockSimulateResponse = {
@@ -182,7 +177,3 @@ export const mockTransferResponse = {
 
 export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";
-
-// Valid UUIDs for tests
-export const VALID_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440001";
-export const NON_EXISTENT_UUID = "990e8400-e29b-41d4-a716-446655440000";

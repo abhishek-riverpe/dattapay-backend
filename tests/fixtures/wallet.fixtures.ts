@@ -142,22 +142,22 @@ export const mockTransactionsResponse = {
   total: 2,
 };
 
+// Common test constants
+const VALID_PAYLOAD_ID = "payload_123";
+const VALID_SIGNATURE = "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...";
+
 // Valid submit wallet payload
 export const validSubmitPayload = {
-  payloadId: "payload_123",
-  signature: "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...",
+  payloadId: VALID_PAYLOAD_ID,
+  signature: VALID_SIGNATURE,
 };
 
 // Invalid submit payloads
-export const invalidSubmitPayloadMissingPayloadId = {
-  signature: "eyJwdWJsaWNLZXkiOiIwMjFiYWEwZD...",
-};
-
-export const invalidSubmitPayloadMissingSignature = {
-  payloadId: "payload_123",
-};
-
-export const invalidSubmitPayloadEmpty = {};
+export const invalidSubmitPayloads = {
+  missingPayloadId: { signature: VALID_SIGNATURE },
+  missingSignature: { payloadId: VALID_PAYLOAD_ID },
+  empty: {},
+} as const;
 
 // Valid get transactions query params
 export const validTransactionsQuery = {
@@ -166,17 +166,11 @@ export const validTransactionsQuery = {
 };
 
 // Invalid get transactions query params
-export const invalidTransactionsQueryNegativeLimit = {
-  limit: -5,
-};
-
-export const invalidTransactionsQueryExceedsMax = {
-  limit: 150,
-};
-
-export const invalidTransactionsQueryNegativeOffset = {
-  offset: -10,
-};
+export const invalidTransactionsQueries = {
+  negativeLimit: { limit: -5 },
+  exceedsMax: { limit: 150 },
+  negativeOffset: { offset: -10 },
+} as const;
 
 export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";

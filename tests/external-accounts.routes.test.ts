@@ -16,9 +16,7 @@ import {
   mockExternalAccountList,
   mockCreatedExternalAccount,
   validCreatePayload,
-  invalidCreatePayloadMissingAddress,
-  invalidCreatePayloadEmptyAddress,
-  invalidCreatePayloadLongAddress,
+  invalidPayloads,
   ADMIN_TOKEN,
   AUTH_TOKEN,
   VALID_UUID,
@@ -189,7 +187,7 @@ describe("External Accounts Routes", () => {
     describe("Validation", () => {
       it("should return 400 when walletAddress is missing", async () => {
         const response = await authRequest("post", "/api/external-accounts").send(
-          invalidCreatePayloadMissingAddress
+          invalidPayloads.missingAddress
         );
 
         expectErrorResponse(response, 400, "Wallet address is required");
@@ -197,7 +195,7 @@ describe("External Accounts Routes", () => {
 
       it("should return 400 when walletAddress is empty", async () => {
         const response = await authRequest("post", "/api/external-accounts").send(
-          invalidCreatePayloadEmptyAddress
+          invalidPayloads.emptyAddress
         );
 
         expectErrorResponse(response, 400);
@@ -205,7 +203,7 @@ describe("External Accounts Routes", () => {
 
       it("should return 400 when walletAddress exceeds max length", async () => {
         const response = await authRequest("post", "/api/external-accounts").send(
-          invalidCreatePayloadLongAddress
+          invalidPayloads.longAddress
         );
 
         expectErrorResponse(response, 400, "Wallet address cannot exceed 255 characters");

@@ -81,28 +81,23 @@ export const mockExternalAccountList = [
   },
 ];
 
+// Common test constants
+const DEFAULT_LABEL = "New Wallet";
+
 // Valid create external account payload
 export const validCreatePayload = {
   walletAddress: "0x9876543210fedcba9876543210fedcba98765432",
-  label: "New Wallet",
+  label: DEFAULT_LABEL,
   type: "ETHEREUM",
   walletId: "new_wallet_123",
 };
 
 // Invalid payloads for validation tests
-export const invalidCreatePayloadMissingAddress = {
-  label: "New Wallet",
-};
-
-export const invalidCreatePayloadEmptyAddress = {
-  walletAddress: "",
-  label: "New Wallet",
-};
-
-export const invalidCreatePayloadLongAddress = {
-  walletAddress: "a".repeat(256),
-  label: "New Wallet",
-};
+export const invalidPayloads = {
+  missingAddress: { label: DEFAULT_LABEL },
+  emptyAddress: { walletAddress: "", label: DEFAULT_LABEL },
+  longAddress: { walletAddress: "a".repeat(256), label: DEFAULT_LABEL },
+} as const;
 
 // Mock Zynk response for create
 export const mockZynkCreateResponse = {

@@ -124,30 +124,26 @@ export const mockUpdatedTeleport = {
   },
 };
 
-// Valid create teleport payload
+// UUID constants
+export const VALID_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440000";
+export const SECONDARY_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440001";
+export const NON_EXISTENT_EXTERNAL_ACCOUNT_UUID = "990e8400-e29b-41d4-a716-446655440000";
+
+// Valid payloads
 export const validCreatePayload = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440000",
+  externalAccountId: VALID_EXTERNAL_ACCOUNT_UUID,
 };
 
-// Valid update teleport payload
 export const validUpdatePayload = {
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
+  externalAccountId: SECONDARY_EXTERNAL_ACCOUNT_UUID,
 };
 
 // Invalid payloads for validation tests
-export const invalidPayloadMissingId = {};
-
-export const invalidPayloadInvalidUuid = {
-  externalAccountId: "invalid-uuid",
-};
-
-export const invalidPayloadEmptyId = {
-  externalAccountId: "",
-};
+export const invalidPayloads = {
+  missingId: {},
+  invalidUuid: { externalAccountId: "invalid-uuid" },
+  emptyId: { externalAccountId: "" },
+} as const;
 
 export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";
-
-// Valid UUIDs for tests
-export const VALID_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440000";
-export const NON_EXISTENT_EXTERNAL_ACCOUNT_UUID = "990e8400-e29b-41d4-a716-446655440000";

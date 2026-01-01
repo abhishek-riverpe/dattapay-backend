@@ -52,17 +52,24 @@ export const mockUpdatedUser = {
   address: baseAddress,
 };
 
+// Common event constants
+const ZYNK_ENTITY_ID = "zynk_entity_123";
+const ROUTING_ID = "routing_123";
+
+// Factory function for event objects
+const createEventObject = <T extends string>(status: T, routingEnabled: boolean) => ({
+  entityId: ZYNK_ENTITY_ID,
+  routingId: ROUTING_ID,
+  status,
+  routingEnabled,
+});
+
 // Valid KYC approved event
 export const validKycApprovedEvent = {
   eventCategory: "kyc" as const,
   eventType: "transitioned" as const,
   eventStatus: "approved" as const,
-  eventObject: {
-    entityId: "zynk_entity_123",
-    routingId: "routing_123",
-    status: "approved" as const,
-    routingEnabled: true,
-  },
+  eventObject: createEventObject("approved" as const, true),
 };
 
 // Non-KYC event (transfer)
@@ -70,12 +77,7 @@ export const transferEvent = {
   eventCategory: "transfer" as const,
   eventType: "transitioned" as const,
   eventStatus: "approved" as const,
-  eventObject: {
-    entityId: "zynk_entity_123",
-    routingId: "routing_123",
-    status: "approved" as const,
-    routingEnabled: true,
-  },
+  eventObject: createEventObject("approved" as const, true),
 };
 
 // Non-approved KYC event
@@ -83,12 +85,7 @@ export const nonApprovedKycEvent = {
   eventCategory: "kyc" as const,
   eventType: "transitioned" as const,
   eventStatus: "pending" as const,
-  eventObject: {
-    entityId: "zynk_entity_123",
-    routingId: "routing_123",
-    status: "pending" as const,
-    routingEnabled: false,
-  },
+  eventObject: createEventObject("pending" as const, false),
 };
 
 // Mock funding account response

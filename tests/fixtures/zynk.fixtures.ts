@@ -16,6 +16,10 @@ const baseAddress: Address = {
   updated_at: new Date(),
 };
 
+// Common ID constants
+const ZYNK_ENTITY_ID = "zynk_entity_123";
+const FUNDING_ACCOUNT_ID = "funding_account_123";
+
 // Base user data
 const baseUserData: User = {
   id: "550e8400-e29b-41d4-a716-446655440000",
@@ -57,7 +61,7 @@ export const mockUserWithoutPublicKey = {
 // User with Zynk entity (for KYC and funding account operations)
 export const mockUserWithZynkEntity = {
   ...baseUserData,
-  zynkEntityId: "zynk_entity_123",
+  zynkEntityId: ZYNK_ENTITY_ID,
   accountStatus: "PENDING",
   address: baseAddress,
 };
@@ -65,8 +69,8 @@ export const mockUserWithZynkEntity = {
 // User with both Zynk entity and funding account
 export const mockUserWithFundingAccount = {
   ...baseUserData,
-  zynkEntityId: "zynk_entity_123",
-  zynkFundingAccountId: "funding_account_123",
+  zynkEntityId: ZYNK_ENTITY_ID,
+  zynkFundingAccountId: FUNDING_ACCOUNT_ID,
   accountStatus: "ACTIVE",
   address: baseAddress,
 };
@@ -87,13 +91,13 @@ export const mockKycData = {
 export const mockKycStatus = {
   status: "approved",
   verifiedAt: new Date().toISOString(),
-  entityId: "zynk_entity_123",
+  entityId: ZYNK_ENTITY_ID,
 };
 
 // Mock funding account data
 export const mockFundingAccount = {
-  id: "funding_account_123",
-  entityId: "zynk_entity_123",
+  id: FUNDING_ACCOUNT_ID,
+  entityId: ZYNK_ENTITY_ID,
   status: "active",
   accountNumber: "****1234",
   routingNumber: "****5678",
