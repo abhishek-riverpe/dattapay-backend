@@ -10,7 +10,8 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(bun add:*)",
-      "Bash(bun run test)"
+      "Bash(bun run test)",
+      "Bash(bun run test:*)"
     ]
   }
 }
