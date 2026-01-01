@@ -79,11 +79,17 @@ describe("Teleport Routes", () => {
   });
 
   // Helper to create authenticated request
-  function authRequest(method: "get" | "post" | "put", endpoint: string) {
-    return request(app)
+  function authRequest(
+    method: "get" | "post" | "put",
+    endpoint: string,
+    payload?: Record<string, unknown>
+  ) {
+    const req = request(app)
       [method](endpoint)
       .set("x-api-token", ADMIN_TOKEN)
       .set("x-auth-token", AUTH_TOKEN);
+
+    return payload ? req.send(payload) : req;
   }
 
   // ===========================================
@@ -167,9 +173,7 @@ describe("Teleport Routes", () => {
   describe("POST /api/teleport", () => {
     describe("Validation", () => {
       it("should return 400 when externalAccountId is missing", async () => {
-        const response = await authRequest("post", "/api/teleport").send(
-          invalidPayloadMissingId
-        );
+        const response = await authRequest("post", "/api/teleport", invalidPayloadMissingId);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -179,9 +183,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 400 when externalAccountId is not a valid UUID", async () => {
-        const response = await authRequest("post", "/api/teleport").send(
-          invalidPayloadInvalidUuid
-        );
+        const response = await authRequest("post", "/api/teleport", invalidPayloadInvalidUuid);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -189,9 +191,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 400 when externalAccountId is empty", async () => {
-        const response = await authRequest("post", "/api/teleport").send(
-          invalidPayloadEmptyId
-        );
+        const response = await authRequest("post", "/api/teleport", invalidPayloadEmptyId);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -205,9 +205,7 @@ describe("Teleport Routes", () => {
           new CustomError(400, "User must have a Zynk entity")
         );
 
-        const response = await authRequest("post", "/api/teleport").send(
-          validCreatePayload
-        );
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -220,9 +218,7 @@ describe("Teleport Routes", () => {
           new CustomError(400, "User must have a funding account")
         );
 
-        const response = await authRequest("post", "/api/teleport").send(
-          validCreatePayload
-        );
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -266,11 +262,7 @@ describe("Teleport Routes", () => {
           new CustomError(409, "User already has a teleport")
         );
 
-        const response = await request(app)
-          .post("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
 
         expect(response.status).toBe(409);
         expect(response.body.success).toBe(false);
@@ -278,13 +270,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 201 when teleport is created successfully", async () => {
-        mockCreate.mockResolvedValue(mockCreatedTeleport);
-
-        const response = await request(app)
-          .post("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
 
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
@@ -296,12 +282,7 @@ describe("Teleport Routes", () => {
       it("should pass correct data to service", async () => {
         mockCreate.mockResolvedValue(mockCreatedTeleport);
 
-        await request(app)
-          .post("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
-
+        await authRequest("post", "/api/teleport", validCreatePayload);
         expect(mockCreate).toHaveBeenCalledWith(
           mockUser.id,
           expect.objectContaining({
@@ -319,10 +300,7 @@ describe("Teleport Routes", () => {
     it("should return 200 with teleport when found", async () => {
       mockGet.mockResolvedValue(mockTeleport);
 
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -332,12 +310,7 @@ describe("Teleport Routes", () => {
     });
 
     it("should return 404 when teleport is not found", async () => {
-      mockGet.mockRejectedValue(new CustomError(404, "Teleport not found"));
-
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -345,12 +318,7 @@ describe("Teleport Routes", () => {
     });
 
     it("should return 404 when user is not found in service", async () => {
-      mockGet.mockRejectedValue(new CustomError(404, "User not found"));
-
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -359,11 +327,7 @@ describe("Teleport Routes", () => {
     it("should pass user id to service", async () => {
       mockGet.mockResolvedValue(mockTeleport);
 
-      await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
+      await authRequest("get", "/api/teleport");
       expect(mockGet).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -374,12 +338,7 @@ describe("Teleport Routes", () => {
   describe("PUT /api/teleport", () => {
     describe("Validation", () => {
       it("should return 400 when externalAccountId is missing", async () => {
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidPayloadMissingId);
-
+        const response = await authRequest("put", "/api/teleport", invalidPayloadMissingId);
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toContain(
@@ -388,12 +347,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 400 when externalAccountId is not a valid UUID", async () => {
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidPayloadInvalidUuid);
-
+        const response = await authRequest("put", "/api/teleport", invalidPayloadInvalidUuid);
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toContain("valid UUID");
@@ -406,11 +360,7 @@ describe("Teleport Routes", () => {
           new CustomError(400, "User must have a Zynk entity")
         );
 
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validUpdatePayload);
+        const response = await authRequest("put", "/api/teleport", validUpdatePayload);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -418,15 +368,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 404 when teleport is not found", async () => {
-        mockUpdate.mockRejectedValue(
-          new CustomError(404, "Teleport not found")
-        );
-
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validUpdatePayload);
+        const response = await authRequest("put", "/api/teleport", validUpdatePayload);
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -438,11 +380,7 @@ describe("Teleport Routes", () => {
           new CustomError(404, "External account not found")
         );
 
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validUpdatePayload);
+        const response = await authRequest("put", "/api/teleport", validUpdatePayload);
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -452,12 +390,7 @@ describe("Teleport Routes", () => {
       it("should return 200 when teleport is updated successfully", async () => {
         mockUpdate.mockResolvedValue(mockUpdatedTeleport);
 
-        const response = await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validUpdatePayload);
-
+        const response = await authRequest("put", "/api/teleport", validUpdatePayload);
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe("Teleport updated successfully");
@@ -467,12 +400,7 @@ describe("Teleport Routes", () => {
       it("should pass correct data to service", async () => {
         mockUpdate.mockResolvedValue(mockUpdatedTeleport);
 
-        await request(app)
-          .put("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validUpdatePayload);
-
+        await authRequest("put", "/api/teleport", validUpdatePayload);
         expect(mockUpdate).toHaveBeenCalledWith(
           mockUser.id,
           expect.objectContaining({
@@ -490,10 +418,7 @@ describe("Teleport Routes", () => {
     it("should always return success boolean", async () => {
       mockGet.mockResolvedValue(mockTeleport);
 
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(typeof response.body.success).toBe("boolean");
     });
@@ -501,10 +426,7 @@ describe("Teleport Routes", () => {
     it("should always return message string", async () => {
       mockGet.mockResolvedValue(mockTeleport);
 
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(typeof response.body.message).toBe("string");
     });
@@ -512,21 +434,13 @@ describe("Teleport Routes", () => {
     it("should return JSON content type", async () => {
       mockGet.mockResolvedValue(mockTeleport);
 
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(response.headers["content-type"]).toMatch(/application\/json/);
     });
 
     it("should return error response for internal server errors", async () => {
-      mockGet.mockRejectedValue(new Error("Database connection failed"));
-
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -538,37 +452,22 @@ describe("Teleport Routes", () => {
   // ==========================================
   describe("Edge Cases", () => {
     it("should handle empty body gracefully on POST", async () => {
-      const response = await request(app)
-        .post("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({});
-
+      const response = await authRequest("post", "/api/teleport", {});
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });
 
     it("should handle empty body gracefully on PUT", async () => {
-      const response = await request(app)
-        .put("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({});
-
+      const response = await authRequest("put", "/api/teleport", {});
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });
 
     it("should reject extra fields in payload (strict validation)", async () => {
-      const response = await request(app)
-        .post("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({
+      const response = await authRequest("post", "/api/teleport", {
           ...validCreatePayload,
           extraField: "should be rejected",
         });
-
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });

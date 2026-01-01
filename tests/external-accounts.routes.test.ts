@@ -7,6 +7,7 @@ import {
   beforeAll,
 } from "@jest/globals";
 import type { Express, Router } from "express";
+import type { Response } from "supertest";
 import request from "supertest";
 import {
   mockUser,
@@ -25,6 +26,31 @@ import {
 } from "./fixtures/external-accounts.fixtures";
 import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
+
+// Response assertion helpers to reduce duplication
+function expectErrorResponse(
+  response: Response,
+  statusCode: number,
+  messageContains?: string
+) {
+  expect(response.status).toBe(statusCode);
+  expect(response.body.success).toBe(false);
+  if (messageContains) {
+    expect(response.body.message).toContain(messageContains);
+  }
+}
+
+function expectSuccessResponse(
+  response: Response,
+  statusCode: number,
+  message?: string
+) {
+  expect(response.status).toBe(statusCode);
+  expect(response.body.success).toBe(true);
+  if (message) {
+    expect(response.body.message).toBe(message);
+  }
+}
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -97,9 +123,7 @@ describe("External Accounts Routes", () => {
         .get("/api/external-accounts")
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Access denied");
+      expectErrorResponse(response, 403, "Access denied");
     });
 
     it("should return 403 when x-api-token is invalid", async () => {
@@ -108,8 +132,7 @@ describe("External Accounts Routes", () => {
         .set("x-api-token", "invalid-token")
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 403);
     });
 
     it("should allow access with valid x-api-token", async () => {
@@ -133,9 +156,7 @@ describe("External Accounts Routes", () => {
         .get("/api/external-accounts")
         .set("x-api-token", ADMIN_TOKEN);
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("token");
+      expectErrorResponse(response, 401, "token");
     });
 
     it("should return 401 when token verification fails", async () => {
@@ -146,8 +167,7 @@ describe("External Accounts Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", "invalid-token");
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
 
     it("should return 401 when user not found for clerk user id", async () => {
@@ -158,8 +178,7 @@ describe("External Accounts Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
   });
 
@@ -173,9 +192,7 @@ describe("External Accounts Routes", () => {
           invalidCreatePayloadMissingAddress
         );
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Wallet address is required");
+        expectErrorResponse(response, 400, "Wallet address is required");
       });
 
       it("should return 400 when walletAddress is empty", async () => {
@@ -183,8 +200,7 @@ describe("External Accounts Routes", () => {
           invalidCreatePayloadEmptyAddress
         );
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
+        expectErrorResponse(response, 400);
       });
 
       it("should return 400 when walletAddress exceeds max length", async () => {
@@ -192,11 +208,7 @@ describe("External Accounts Routes", () => {
           invalidCreatePayloadLongAddress
         );
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "Wallet address cannot exceed 255 characters"
-        );
+        expectErrorResponse(response, 400, "Wallet address cannot exceed 255 characters");
       });
 
       it("should return 400 when label exceeds max length", async () => {
@@ -205,11 +217,7 @@ describe("External Accounts Routes", () => {
           label: "a".repeat(101),
         });
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "Label cannot exceed 100 characters"
-        );
+        expectErrorResponse(response, 400, "Label cannot exceed 100 characters");
       });
     });
 
@@ -227,9 +235,7 @@ describe("External Accounts Routes", () => {
           validCreatePayload
         );
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Zynk entity");
+        expectErrorResponse(response, 400, "Zynk entity");
       });
 
       it("should return 409 when external account already exists", async () => {
@@ -244,9 +250,7 @@ describe("External Accounts Routes", () => {
           validCreatePayload
         );
 
-        expect(response.status).toBe(409);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("already exists");
+        expectErrorResponse(response, 409, "already exists");
       });
 
       it("should return 201 when external account is created successfully", async () => {
@@ -256,11 +260,7 @@ describe("External Accounts Routes", () => {
           validCreatePayload
         );
 
-        expect(response.status).toBe(201);
-        expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe(
-          "External account created successfully"
-        );
+        expectSuccessResponse(response, 201, "External account created successfully");
         expect(response.body.data).toBeDefined();
         expect(response.body.data.walletAddress).toBe(
           validCreatePayload.walletAddress
@@ -292,11 +292,7 @@ describe("External Accounts Routes", () => {
 
       const response = await authRequest("get", "/api/external-accounts");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe(
-        "External accounts retrieved successfully"
-      );
+      expectSuccessResponse(response, 200, "External accounts retrieved successfully");
       expect(response.body.data).toHaveLength(2);
     });
 
@@ -305,8 +301,7 @@ describe("External Accounts Routes", () => {
 
       const response = await authRequest("get", "/api/external-accounts");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
+      expectSuccessResponse(response, 200);
       expect(response.body.data).toEqual([]);
     });
 
@@ -323,8 +318,47 @@ describe("External Accounts Routes", () => {
 
       const response = await authRequest("get", "/api/external-accounts");
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 404);
+    });
+  });
+
+  // ==========================================
+  // Shared tests for GET/:id and DELETE/:id
+  // ==========================================
+  describe.each([
+    { method: "get" as const, name: "GET" },
+    { method: "delete" as const, name: "DELETE" },
+  ])("$name /api/external-accounts/:id - Common Validation", ({ method }) => {
+    it("should return 400 when id is not a valid UUID", async () => {
+      const response = await authRequest(
+        method,
+        "/api/external-accounts/invalid-uuid"
+      );
+
+      expectErrorResponse(response, 400, "valid UUID");
+    });
+
+    it("should return 404 when external account is not found", async () => {
+      const mockFn = method === "get" ? mockGetById : mockDelete;
+      mockFn.mockRejectedValue(
+        new CustomError(404, "External account not found")
+      );
+
+      const response = await authRequest(
+        method,
+        `/api/external-accounts/${NON_EXISTENT_UUID}`
+      );
+
+      expectErrorResponse(response, 404, "not found");
+    });
+
+    it("should pass correct parameters to service", async () => {
+      const mockFn = method === "get" ? mockGetById : mockDelete;
+      mockFn.mockResolvedValue(method === "get" ? mockExternalAccount : null);
+
+      await authRequest(method, `/api/external-accounts/${VALID_UUID}`);
+
+      expect(mockFn).toHaveBeenCalledWith(mockUser.id, VALID_UUID);
     });
   });
 
@@ -332,59 +366,17 @@ describe("External Accounts Routes", () => {
   // GET /api/external-accounts/:id (Get By ID)
   // ==========================================
   describe("GET /api/external-accounts/:id", () => {
-    describe("Validation", () => {
-      it("should return 400 when id is not a valid UUID", async () => {
-        const response = await authRequest(
-          "get",
-          "/api/external-accounts/invalid-uuid"
-        );
+    it("should return 200 with external account when found", async () => {
+      mockGetById.mockResolvedValue(mockExternalAccount);
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("valid UUID");
-      });
-    });
+      const response = await authRequest(
+        "get",
+        `/api/external-accounts/${VALID_UUID}`
+      );
 
-    describe("Business Logic", () => {
-      it("should return 200 with external account when found", async () => {
-        mockGetById.mockResolvedValue(mockExternalAccount);
-
-        const response = await authRequest(
-          "get",
-          `/api/external-accounts/${VALID_UUID}`
-        );
-
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe(
-          "External account retrieved successfully"
-        );
-        expect(response.body.data).toBeDefined();
-        expect(response.body.data.id).toBe(mockExternalAccount.id);
-      });
-
-      it("should return 404 when external account is not found", async () => {
-        mockGetById.mockRejectedValue(
-          new CustomError(404, "External account not found")
-        );
-
-        const response = await authRequest(
-          "get",
-          `/api/external-accounts/${NON_EXISTENT_UUID}`
-        );
-
-        expect(response.status).toBe(404);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("not found");
-      });
-
-      it("should pass correct parameters to service", async () => {
-        mockGetById.mockResolvedValue(mockExternalAccount);
-
-        await authRequest("get", `/api/external-accounts/${VALID_UUID}`);
-
-        expect(mockGetById).toHaveBeenCalledWith(mockUser.id, VALID_UUID);
-      });
+      expectSuccessResponse(response, 200, "External account retrieved successfully");
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.id).toBe(mockExternalAccount.id);
     });
   });
 
@@ -392,72 +384,28 @@ describe("External Accounts Routes", () => {
   // DELETE /api/external-accounts/:id
   // ==========================================
   describe("DELETE /api/external-accounts/:id", () => {
-    describe("Validation", () => {
-      it("should return 400 when id is not a valid UUID", async () => {
-        const response = await authRequest(
-          "delete",
-          "/api/external-accounts/invalid-uuid"
-        );
+    it("should return 200 when external account is deleted successfully", async () => {
+      mockDelete.mockResolvedValue(null);
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("valid UUID");
-      });
+      const response = await authRequest(
+        "delete",
+        `/api/external-accounts/${VALID_UUID}`
+      );
+
+      expectSuccessResponse(response, 200, "External account deleted successfully");
     });
 
-    describe("Business Logic", () => {
-      it("should return 200 when external account is deleted successfully", async () => {
-        mockDelete.mockResolvedValue(null);
+    it("should return 400 when user does not have zynk entity", async () => {
+      mockDelete.mockRejectedValue(
+        new CustomError(400, "User does not have a Zynk entity")
+      );
 
-        const response = await authRequest(
-          "delete",
-          `/api/external-accounts/${VALID_UUID}`
-        );
+      const response = await authRequest(
+        "delete",
+        `/api/external-accounts/${VALID_UUID}`
+      );
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe(
-          "External account deleted successfully"
-        );
-      });
-
-      it("should return 404 when external account is not found", async () => {
-        mockDelete.mockRejectedValue(
-          new CustomError(404, "External account not found")
-        );
-
-        const response = await authRequest(
-          "delete",
-          `/api/external-accounts/${NON_EXISTENT_UUID}`
-        );
-
-        expect(response.status).toBe(404);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("not found");
-      });
-
-      it("should return 400 when user does not have zynk entity", async () => {
-        mockDelete.mockRejectedValue(
-          new CustomError(400, "User does not have a Zynk entity")
-        );
-
-        const response = await authRequest(
-          "delete",
-          `/api/external-accounts/${VALID_UUID}`
-        );
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Zynk entity");
-      });
-
-      it("should pass correct parameters to service", async () => {
-        mockDelete.mockResolvedValue(null);
-
-        await authRequest("delete", `/api/external-accounts/${VALID_UUID}`);
-
-        expect(mockDelete).toHaveBeenCalledWith(mockUser.id, VALID_UUID);
-      });
+      expectErrorResponse(response, 400, "Zynk entity");
     });
   });
 
@@ -465,25 +413,18 @@ describe("External Accounts Routes", () => {
   // Response Format Tests
   // ===========================================
   describe("Response Format", () => {
-    it("should always return success boolean", async () => {
+    beforeEach(() => {
       mockList.mockResolvedValue([]);
+    });
 
+    it("should always return success boolean and message string", async () => {
       const response = await authRequest("get", "/api/external-accounts");
 
       expect(typeof response.body.success).toBe("boolean");
-    });
-
-    it("should always return message string", async () => {
-      mockList.mockResolvedValue([]);
-
-      const response = await authRequest("get", "/api/external-accounts");
-
       expect(typeof response.body.message).toBe("string");
     });
 
     it("should return JSON content type", async () => {
-      mockList.mockResolvedValue([]);
-
       const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.headers["content-type"]).toMatch(/application\/json/);
@@ -494,8 +435,7 @@ describe("External Accounts Routes", () => {
 
       const response = await authRequest("get", "/api/external-accounts");
 
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 500);
     });
   });
 
@@ -503,23 +443,26 @@ describe("External Accounts Routes", () => {
   // EDGE CASES
   // ==========================================
   describe("Edge Cases", () => {
-    it("should handle special characters in wallet address", async () => {
+    it.each([
+      {
+        desc: "special characters in wallet address",
+        payload: {
+          walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
+          label: "Mixed Case Wallet",
+        },
+      },
+      {
+        desc: "optional fields being undefined",
+        payload: {
+          walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
+        },
+      },
+    ])("should handle $desc", async ({ payload }) => {
       mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-      const response = await authRequest("post", "/api/external-accounts").send({
-        walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
-        label: "Mixed Case Wallet",
-      });
-
-      expect(response.status).toBe(201);
-    });
-
-    it("should handle optional fields being undefined", async () => {
-      mockCreate.mockResolvedValue(mockCreatedExternalAccount);
-
-      const response = await authRequest("post", "/api/external-accounts").send({
-        walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
-      });
+      const response = await authRequest("post", "/api/external-accounts").send(
+        payload
+      );
 
       expect(response.status).toBe(201);
     });
@@ -529,8 +472,7 @@ describe("External Accounts Routes", () => {
         {}
       );
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 400);
     });
   });
 });

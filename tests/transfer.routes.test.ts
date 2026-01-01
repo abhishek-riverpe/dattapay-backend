@@ -31,8 +31,10 @@ import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockSimulateTransfer = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockSimulateTransfer =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockTransfer = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // Use unstable_mockModule for ESM compatibility
@@ -174,7 +176,9 @@ describe("Transfer Routes", () => {
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("External account ID is required");
+        expect(response.body.message).toContain(
+          "External account ID is required"
+        );
       });
 
       it("should return 400 when externalAccountId is not a valid UUID", async () => {
@@ -198,7 +202,9 @@ describe("Transfer Routes", () => {
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("exactAmountIn or exactAmountOut");
+        expect(response.body.message).toContain(
+          "exactAmountIn or exactAmountOut"
+        );
       });
 
       it("should return 400 when exactAmountIn is negative", async () => {
@@ -249,7 +255,10 @@ describe("Transfer Routes", () => {
 
       it("should return 400 when user does not have a wallet", async () => {
         mockSimulateTransfer.mockRejectedValue(
-          new CustomError(400, "User does not have a wallet. Please create a wallet first.")
+          new CustomError(
+            400,
+            "User does not have a wallet. Please create a wallet first."
+          )
         );
 
         const response = await request(app)
@@ -276,12 +285,17 @@ describe("Transfer Routes", () => {
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Destination external account not found");
+        expect(response.body.message).toContain(
+          "Destination external account not found"
+        );
       });
 
       it("should return 400 when destination is not withdrawal type", async () => {
         mockSimulateTransfer.mockRejectedValue(
-          new CustomError(400, "Destination account must be a withdrawal type external account")
+          new CustomError(
+            400,
+            "Destination account must be a withdrawal type external account"
+          )
         );
 
         const response = await request(app)
@@ -308,7 +322,9 @@ describe("Transfer Routes", () => {
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe("Transfer simulation successful");
         expect(response.body.data).toBeDefined();
-        expect(response.body.data.executionId).toBe(mockSimulateResponse.executionId);
+        expect(response.body.data.executionId).toBe(
+          mockSimulateResponse.executionId
+        );
         expect(response.body.data.payloadToSign).toBeDefined();
         expect(response.body.data.quote).toBeDefined();
       });
@@ -401,7 +417,9 @@ describe("Transfer Routes", () => {
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe(mockTransferResponse.message);
         expect(response.body.data).toBeDefined();
-        expect(response.body.data.executionId).toBe(mockTransferResponse.executionId);
+        expect(response.body.data.executionId).toBe(
+          mockTransferResponse.executionId
+        );
       });
 
       it("should return 400 when execution ID is invalid", async () => {
