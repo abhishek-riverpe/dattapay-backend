@@ -80,6 +80,14 @@ describe("External Accounts Routes", () => {
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
 
+  // Helper to create authenticated request
+  function authRequest(method: "get" | "post" | "delete", endpoint: string) {
+    return request(app)
+      [method](endpoint)
+      .set("x-api-token", ADMIN_TOKEN)
+      .set("x-auth-token", AUTH_TOKEN);
+  }
+
   // ===========================================
   // Admin Middleware Tests
   // ===========================================
@@ -161,11 +169,9 @@ describe("External Accounts Routes", () => {
   describe("POST /api/external-accounts", () => {
     describe("Validation", () => {
       it("should return 400 when walletAddress is missing", async () => {
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidCreatePayloadMissingAddress);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          invalidCreatePayloadMissingAddress
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -173,22 +179,18 @@ describe("External Accounts Routes", () => {
       });
 
       it("should return 400 when walletAddress is empty", async () => {
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidCreatePayloadEmptyAddress);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          invalidCreatePayloadEmptyAddress
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
 
       it("should return 400 when walletAddress exceeds max length", async () => {
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidCreatePayloadLongAddress);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          invalidCreatePayloadLongAddress
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -198,14 +200,10 @@ describe("External Accounts Routes", () => {
       });
 
       it("should return 400 when label exceeds max length", async () => {
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({
-            walletAddress: "0x1234567890abcdef",
-            label: "a".repeat(101),
-          });
+        const response = await authRequest("post", "/api/external-accounts").send({
+          walletAddress: "0x1234567890abcdef",
+          label: "a".repeat(101),
+        });
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -225,11 +223,9 @@ describe("External Accounts Routes", () => {
           )
         );
 
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          validCreatePayload
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -244,11 +240,9 @@ describe("External Accounts Routes", () => {
           )
         );
 
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          validCreatePayload
+        );
 
         expect(response.status).toBe(409);
         expect(response.body.success).toBe(false);
@@ -258,11 +252,9 @@ describe("External Accounts Routes", () => {
       it("should return 201 when external account is created successfully", async () => {
         mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-        const response = await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/external-accounts").send(
+          validCreatePayload
+        );
 
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
@@ -278,11 +270,7 @@ describe("External Accounts Routes", () => {
       it("should pass correct data to service", async () => {
         mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-        await request(app)
-          .post("/api/external-accounts")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        await authRequest("post", "/api/external-accounts").send(validCreatePayload);
 
         expect(mockCreate).toHaveBeenCalledWith(
           mockUser.id,
@@ -302,10 +290,7 @@ describe("External Accounts Routes", () => {
     it("should return 200 with list of external accounts", async () => {
       mockList.mockResolvedValue(mockExternalAccountList);
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -318,10 +303,7 @@ describe("External Accounts Routes", () => {
     it("should return 200 with empty array when no accounts exist", async () => {
       mockList.mockResolvedValue([]);
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -331,10 +313,7 @@ describe("External Accounts Routes", () => {
     it("should pass user id to service", async () => {
       mockList.mockResolvedValue([]);
 
-      await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("get", "/api/external-accounts");
 
       expect(mockList).toHaveBeenCalledWith(mockUser.id);
     });
@@ -342,10 +321,7 @@ describe("External Accounts Routes", () => {
     it("should return 404 when user not found in service", async () => {
       mockList.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -358,10 +334,10 @@ describe("External Accounts Routes", () => {
   describe("GET /api/external-accounts/:id", () => {
     describe("Validation", () => {
       it("should return 400 when id is not a valid UUID", async () => {
-        const response = await request(app)
-          .get("/api/external-accounts/invalid-uuid")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "get",
+          "/api/external-accounts/invalid-uuid"
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -373,10 +349,10 @@ describe("External Accounts Routes", () => {
       it("should return 200 with external account when found", async () => {
         mockGetById.mockResolvedValue(mockExternalAccount);
 
-        const response = await request(app)
-          .get(`/api/external-accounts/${VALID_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "get",
+          `/api/external-accounts/${VALID_UUID}`
+        );
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -392,10 +368,10 @@ describe("External Accounts Routes", () => {
           new CustomError(404, "External account not found")
         );
 
-        const response = await request(app)
-          .get(`/api/external-accounts/${NON_EXISTENT_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "get",
+          `/api/external-accounts/${NON_EXISTENT_UUID}`
+        );
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -405,10 +381,7 @@ describe("External Accounts Routes", () => {
       it("should pass correct parameters to service", async () => {
         mockGetById.mockResolvedValue(mockExternalAccount);
 
-        await request(app)
-          .get(`/api/external-accounts/${VALID_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        await authRequest("get", `/api/external-accounts/${VALID_UUID}`);
 
         expect(mockGetById).toHaveBeenCalledWith(mockUser.id, VALID_UUID);
       });
@@ -421,10 +394,10 @@ describe("External Accounts Routes", () => {
   describe("DELETE /api/external-accounts/:id", () => {
     describe("Validation", () => {
       it("should return 400 when id is not a valid UUID", async () => {
-        const response = await request(app)
-          .delete("/api/external-accounts/invalid-uuid")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "delete",
+          "/api/external-accounts/invalid-uuid"
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -436,10 +409,10 @@ describe("External Accounts Routes", () => {
       it("should return 200 when external account is deleted successfully", async () => {
         mockDelete.mockResolvedValue(null);
 
-        const response = await request(app)
-          .delete(`/api/external-accounts/${VALID_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "delete",
+          `/api/external-accounts/${VALID_UUID}`
+        );
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -453,10 +426,10 @@ describe("External Accounts Routes", () => {
           new CustomError(404, "External account not found")
         );
 
-        const response = await request(app)
-          .delete(`/api/external-accounts/${NON_EXISTENT_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "delete",
+          `/api/external-accounts/${NON_EXISTENT_UUID}`
+        );
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -468,10 +441,10 @@ describe("External Accounts Routes", () => {
           new CustomError(400, "User does not have a Zynk entity")
         );
 
-        const response = await request(app)
-          .delete(`/api/external-accounts/${VALID_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest(
+          "delete",
+          `/api/external-accounts/${VALID_UUID}`
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -481,10 +454,7 @@ describe("External Accounts Routes", () => {
       it("should pass correct parameters to service", async () => {
         mockDelete.mockResolvedValue(null);
 
-        await request(app)
-          .delete(`/api/external-accounts/${VALID_UUID}`)
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        await authRequest("delete", `/api/external-accounts/${VALID_UUID}`);
 
         expect(mockDelete).toHaveBeenCalledWith(mockUser.id, VALID_UUID);
       });
@@ -498,10 +468,7 @@ describe("External Accounts Routes", () => {
     it("should always return success boolean", async () => {
       mockList.mockResolvedValue([]);
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(typeof response.body.success).toBe("boolean");
     });
@@ -509,10 +476,7 @@ describe("External Accounts Routes", () => {
     it("should always return message string", async () => {
       mockList.mockResolvedValue([]);
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(typeof response.body.message).toBe("string");
     });
@@ -520,10 +484,7 @@ describe("External Accounts Routes", () => {
     it("should return JSON content type", async () => {
       mockList.mockResolvedValue([]);
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.headers["content-type"]).toMatch(/application\/json/);
     });
@@ -531,10 +492,7 @@ describe("External Accounts Routes", () => {
     it("should return error response for internal server errors", async () => {
       mockList.mockRejectedValue(new Error("Database connection failed"));
 
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/external-accounts");
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -548,14 +506,10 @@ describe("External Accounts Routes", () => {
     it("should handle special characters in wallet address", async () => {
       mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-      const response = await request(app)
-        .post("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({
-          walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
-          label: "Mixed Case Wallet",
-        });
+      const response = await authRequest("post", "/api/external-accounts").send({
+        walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
+        label: "Mixed Case Wallet",
+      });
 
       expect(response.status).toBe(201);
     });
@@ -563,23 +517,17 @@ describe("External Accounts Routes", () => {
     it("should handle optional fields being undefined", async () => {
       mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-      const response = await request(app)
-        .post("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({
-          walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
-        });
+      const response = await authRequest("post", "/api/external-accounts").send({
+        walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
+      });
 
       expect(response.status).toBe(201);
     });
 
     it("should handle empty body gracefully", async () => {
-      const response = await request(app)
-        .post("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({});
+      const response = await authRequest("post", "/api/external-accounts").send(
+        {}
+      );
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
