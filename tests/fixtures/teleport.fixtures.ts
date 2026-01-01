@@ -1,9 +1,18 @@
 import type { User, Teleport, ExternalAccount, Address } from "../../generated/prisma/client";
 import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
+// Common ID constants
+const USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const ADDRESS_ID = "660e8400-e29b-41d4-a716-446655440001";
+const EXTERNAL_ACCOUNT_ID = "770e8400-e29b-41d4-a716-446655440000";
+const SECONDARY_EXTERNAL_ACCOUNT_ID = "770e8400-e29b-41d4-a716-446655440001";
+const TELEPORT_ID = "880e8400-e29b-41d4-a716-446655440000";
+const ZYNK_ENTITY_ID = "zynk_entity_123";
+const FUNDING_ACCOUNT_ID = "funding_account_123";
+
 // Base address for user relations
 const baseAddress: Address = {
-  id: "660e8400-e29b-41d4-a716-446655440001",
+  id: ADDRESS_ID,
   addressLine1: "123 Main St",
   addressLine2: null,
   locality: "Downtown",
@@ -11,14 +20,14 @@ const baseAddress: Address = {
   state: "NY",
   country: "USA",
   postalCode: "10001",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
+  userId: USER_ID,
   created_at: new Date(),
   updated_at: new Date(),
 };
 
 // Base user data with all required Zynk fields
 const baseUserData: User = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
+  id: USER_ID,
   clerkUserId: "clerk_user_123",
   firstName: "John",
   lastName: "Doe",
@@ -29,8 +38,8 @@ const baseUserData: User = {
   nationality: "US",
   dateOfBirth: new Date("1990-01-15"),
   accountStatus: "ACTIVE",
-  zynkEntityId: "zynk_entity_123",
-  zynkFundingAccountId: "funding_account_123",
+  zynkEntityId: ZYNK_ENTITY_ID,
+  zynkFundingAccountId: FUNDING_ACCOUNT_ID,
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -58,8 +67,8 @@ export const mockUserWithoutFundingAccount = {
 
 // Base external account data
 const baseExternalAccountData: ExternalAccount = {
-  id: "770e8400-e29b-41d4-a716-446655440000",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
+  id: EXTERNAL_ACCOUNT_ID,
+  userId: USER_ID,
   walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
   label: "My Wallet",
   zynkExternalAccountId: "zynk_ext_acc_123",
@@ -84,9 +93,9 @@ export const mockExternalAccountWithoutZynk = {
 
 // Base teleport data
 const baseTeleportData: Teleport = {
-  id: "880e8400-e29b-41d4-a716-446655440000",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440000",
+  id: TELEPORT_ID,
+  userId: USER_ID,
+  externalAccountId: EXTERNAL_ACCOUNT_ID,
   zynkTeleportId: "zynk_teleport_123",
   status: "ACTIVE",
   created_at: new Date(),
@@ -116,17 +125,17 @@ export const mockCreatedTeleport = {
 // Mock updated teleport with new external account
 export const mockUpdatedTeleport = {
   ...baseTeleportData,
-  externalAccountId: "770e8400-e29b-41d4-a716-446655440001",
+  externalAccountId: SECONDARY_EXTERNAL_ACCOUNT_ID,
   zynkTeleportId: mockZynkTeleportResponse.data.teleportId,
   externalAccount: {
     ...mockExternalAccount,
-    id: "770e8400-e29b-41d4-a716-446655440001",
+    id: SECONDARY_EXTERNAL_ACCOUNT_ID,
   },
 };
 
-// UUID constants
-export const VALID_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440000";
-export const SECONDARY_EXTERNAL_ACCOUNT_UUID = "770e8400-e29b-41d4-a716-446655440001";
+// UUID constants (reuse internal constants for consistency)
+export const VALID_EXTERNAL_ACCOUNT_UUID = EXTERNAL_ACCOUNT_ID;
+export const SECONDARY_EXTERNAL_ACCOUNT_UUID = SECONDARY_EXTERNAL_ACCOUNT_ID;
 export const NON_EXISTENT_EXTERNAL_ACCOUNT_UUID = "990e8400-e29b-41d4-a716-446655440000";
 
 // Valid payloads
