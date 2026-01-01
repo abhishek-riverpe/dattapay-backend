@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import type { Express } from "express";
-import request from "supertest";
+import request, { Test } from "supertest";
 
 export interface ResponseFormatTestConfig {
   getApp: () => Express;
@@ -30,92 +30,46 @@ export function createResponseFormatTests(config: ResponseFormatTestConfig) {
     customHeaders = {},
   } = config;
 
+  // Helper to build request with common headers and payload
+  function buildRequest(): Test {
+    let req = request(getApp())[method](endpoint);
+    if (adminToken) {
+      req = req.set("x-api-token", adminToken);
+    }
+    if (authToken) {
+      req = req.set("x-auth-token", authToken);
+    }
+    Object.entries(customHeaders).forEach(([key, value]) => {
+      req = req.set(key, value);
+    });
+    if (payload) {
+      req = req.send(payload);
+    }
+    return req;
+  }
+
   describe("Response Format", () => {
     it("should always return success boolean", async () => {
       setupSuccessMock();
-
-      let req = request(getApp())[method](endpoint);
-      if (adminToken) {
-        req = req.set("x-api-token", adminToken);
-      }
-      if (authToken) {
-        req = req.set("x-auth-token", authToken);
-      }
-      Object.entries(customHeaders).forEach(([key, value]) => {
-        req = req.set(key, value);
-      });
-      if (payload) {
-        req = req.send(payload);
-      }
-
-      const response = await req;
-
+      const response = await buildRequest();
       expect(typeof response.body.success).toBe("boolean");
     });
 
     it("should always return message string", async () => {
       setupSuccessMock();
-
-      let req = request(getApp())[method](endpoint);
-      if (adminToken) {
-        req = req.set("x-api-token", adminToken);
-      }
-      if (authToken) {
-        req = req.set("x-auth-token", authToken);
-      }
-      Object.entries(customHeaders).forEach(([key, value]) => {
-        req = req.set(key, value);
-      });
-      if (payload) {
-        req = req.send(payload);
-      }
-
-      const response = await req;
-
+      const response = await buildRequest();
       expect(typeof response.body.message).toBe("string");
     });
 
     it("should return JSON content type", async () => {
       setupSuccessMock();
-
-      let req = request(getApp())[method](endpoint);
-      if (adminToken) {
-        req = req.set("x-api-token", adminToken);
-      }
-      if (authToken) {
-        req = req.set("x-auth-token", authToken);
-      }
-      Object.entries(customHeaders).forEach(([key, value]) => {
-        req = req.set(key, value);
-      });
-      if (payload) {
-        req = req.send(payload);
-      }
-
-      const response = await req;
-
+      const response = await buildRequest();
       expect(response.headers["content-type"]).toMatch(/application\/json/);
     });
 
     it("should return error response for internal server errors", async () => {
       setupErrorMock();
-
-      let req = request(getApp())[method](endpoint);
-      if (adminToken) {
-        req = req.set("x-api-token", adminToken);
-      }
-      if (authToken) {
-        req = req.set("x-auth-token", authToken);
-      }
-      Object.entries(customHeaders).forEach(([key, value]) => {
-        req = req.set(key, value);
-      });
-      if (payload) {
-        req = req.send(payload);
-      }
-
-      const response = await req;
-
+      const response = await buildRequest();
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
     });

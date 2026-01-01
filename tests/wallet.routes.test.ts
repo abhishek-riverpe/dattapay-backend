@@ -1,36 +1,36 @@
 import {
-  jest,
-  describe,
-  it,
-  expect,
-  beforeEach,
   beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
 } from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
+import CustomError from "../lib/Error";
 import {
-  mockUser,
-  mockUserWithoutZynkEntity,
-  mockWalletWithAccount,
-  mockWalletWithoutAccount,
-  mockPrepareWalletResponse,
-  mockPrepareAccountResponse,
-  mockCreatedWallet,
-  mockCreatedAccount,
-  mockTransactionsResponse,
-  validSubmitPayload,
-  invalidSubmitPayloadMissingPayloadId,
-  invalidSubmitPayloadMissingSignature,
-  invalidSubmitPayloadEmpty,
   ADMIN_TOKEN,
   AUTH_TOKEN,
+  invalidSubmitPayloadEmpty,
+  invalidSubmitPayloadMissingPayloadId,
+  invalidSubmitPayloadMissingSignature,
+  mockCreatedAccount,
+  mockCreatedWallet,
+  mockPrepareAccountResponse,
+  mockPrepareWalletResponse,
+  mockTransactionsResponse,
+  mockUser,
+  mockWalletWithAccount,
+  mockWalletWithoutAccount,
+  validSubmitPayload,
 } from "./fixtures/wallet.fixtures";
-import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPrepareWallet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockSubmitWallet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPrepareAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -85,6 +85,14 @@ describe("Wallet Routes", () => {
     mockVerifyToken.mockResolvedValue({ sub: "clerk_user_123" });
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
+
+  // Helper to create authenticated request
+  function authRequest(method: "get" | "post", endpoint: string) {
+    return request(app)
+      [method](endpoint)
+      .set("x-api-token", ADMIN_TOKEN)
+      .set("x-auth-token", AUTH_TOKEN);
+  }
 
   // ===========================================
   // Admin Middleware Tests
@@ -168,16 +176,17 @@ describe("Wallet Routes", () => {
     it("should return 200 with payload to sign on success", async () => {
       mockPrepareWallet.mockResolvedValue(mockPrepareWalletResponse);
 
-      const response = await request(app)
-        .post("/api/wallet/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/prepare");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Please sign the payload to create a wallet");
+      expect(response.body.message).toBe(
+        "Please sign the payload to create a wallet"
+      );
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.payloadId).toBe(mockPrepareWalletResponse.payloadId);
+      expect(response.body.data.payloadId).toBe(
+        mockPrepareWalletResponse.payloadId
+      );
       expect(response.body.data.payloadToSign).toBeDefined();
     });
 
@@ -186,10 +195,7 @@ describe("Wallet Routes", () => {
         new CustomError(400, "User must complete KYC before creating a wallet")
       );
 
-      const response = await request(app)
-        .post("/api/wallet/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/prepare");
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -201,10 +207,7 @@ describe("Wallet Routes", () => {
         new CustomError(400, "User already has a wallet")
       );
 
-      const response = await request(app)
-        .post("/api/wallet/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/prepare");
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -214,10 +217,7 @@ describe("Wallet Routes", () => {
     it("should pass user id to service", async () => {
       mockPrepareWallet.mockResolvedValue(mockPrepareWalletResponse);
 
-      await request(app)
-        .post("/api/wallet/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("post", "/api/wallet/prepare");
 
       expect(mockPrepareWallet).toHaveBeenCalledWith(mockUser.id);
     });
@@ -229,11 +229,9 @@ describe("Wallet Routes", () => {
   describe("POST /api/wallet/submit", () => {
     describe("Validation", () => {
       it("should return 400 when payloadId is missing", async () => {
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSubmitPayloadMissingPayloadId);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          invalidSubmitPayloadMissingPayloadId
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -241,11 +239,9 @@ describe("Wallet Routes", () => {
       });
 
       it("should return 400 when signature is missing", async () => {
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSubmitPayloadMissingSignature);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          invalidSubmitPayloadMissingSignature
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -253,11 +249,9 @@ describe("Wallet Routes", () => {
       });
 
       it("should return 400 when body is empty", async () => {
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSubmitPayloadEmpty);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          invalidSubmitPayloadEmpty
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -268,11 +262,9 @@ describe("Wallet Routes", () => {
       it("should return 200 with wallet on success", async () => {
         mockSubmitWallet.mockResolvedValue(mockCreatedWallet);
 
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          validSubmitPayload
+        );
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -282,14 +274,15 @@ describe("Wallet Routes", () => {
 
       it("should return 400 when user has not completed KYC", async () => {
         mockSubmitWallet.mockRejectedValue(
-          new CustomError(400, "User must complete KYC before creating a wallet")
+          new CustomError(
+            400,
+            "User must complete KYC before creating a wallet"
+          )
         );
 
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          validSubmitPayload
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -300,11 +293,9 @@ describe("Wallet Routes", () => {
           new CustomError(400, "User already has a wallet")
         );
 
-        const response = await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest("post", "/api/wallet/submit").send(
+          validSubmitPayload
+        );
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -313,11 +304,7 @@ describe("Wallet Routes", () => {
       it("should pass correct data to service", async () => {
         mockSubmitWallet.mockResolvedValue(mockCreatedWallet);
 
-        await request(app)
-          .post("/api/wallet/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        await authRequest("post", "/api/wallet/submit").send(validSubmitPayload);
 
         expect(mockSubmitWallet).toHaveBeenCalledWith(
           mockUser.id,
@@ -335,14 +322,13 @@ describe("Wallet Routes", () => {
     it("should return 200 with payload to sign on success", async () => {
       mockPrepareAccount.mockResolvedValue(mockPrepareAccountResponse);
 
-      const response = await request(app)
-        .post("/api/wallet/accounts/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/accounts/prepare");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Please sign the payload to create an account");
+      expect(response.body.message).toBe(
+        "Please sign the payload to create an account"
+      );
       expect(response.body.data).toBeDefined();
       expect(response.body.data.payloadId).toBeDefined();
       expect(response.body.data.payloadToSign).toBeDefined();
@@ -353,10 +339,7 @@ describe("Wallet Routes", () => {
         new CustomError(404, "Wallet not found. Please create a wallet first.")
       );
 
-      const response = await request(app)
-        .post("/api/wallet/accounts/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/accounts/prepare");
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -368,10 +351,7 @@ describe("Wallet Routes", () => {
         new CustomError(400, "Wallet already has an account")
       );
 
-      const response = await request(app)
-        .post("/api/wallet/accounts/prepare")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("post", "/api/wallet/accounts/prepare");
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -385,11 +365,10 @@ describe("Wallet Routes", () => {
   describe("POST /api/wallet/accounts/submit", () => {
     describe("Validation", () => {
       it("should return 400 when payloadId is missing", async () => {
-        const response = await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSubmitPayloadMissingPayloadId);
+        const response = await authRequest(
+          "post",
+          "/api/wallet/accounts/submit"
+        ).send(invalidSubmitPayloadMissingPayloadId);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -397,11 +376,10 @@ describe("Wallet Routes", () => {
       });
 
       it("should return 400 when signature is missing", async () => {
-        const response = await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSubmitPayloadMissingSignature);
+        const response = await authRequest(
+          "post",
+          "/api/wallet/accounts/submit"
+        ).send(invalidSubmitPayloadMissingSignature);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -413,11 +391,10 @@ describe("Wallet Routes", () => {
       it("should return 200 with account on success", async () => {
         mockSubmitAccount.mockResolvedValue(mockCreatedAccount);
 
-        const response = await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest(
+          "post",
+          "/api/wallet/accounts/submit"
+        ).send(validSubmitPayload);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -427,14 +404,16 @@ describe("Wallet Routes", () => {
 
       it("should return 404 when wallet not found", async () => {
         mockSubmitAccount.mockRejectedValue(
-          new CustomError(404, "Wallet not found. Please create a wallet first.")
+          new CustomError(
+            404,
+            "Wallet not found. Please create a wallet first."
+          )
         );
 
-        const response = await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest(
+          "post",
+          "/api/wallet/accounts/submit"
+        ).send(validSubmitPayload);
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -445,11 +424,10 @@ describe("Wallet Routes", () => {
           new CustomError(400, "Wallet already has an account")
         );
 
-        const response = await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        const response = await authRequest(
+          "post",
+          "/api/wallet/accounts/submit"
+        ).send(validSubmitPayload);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -458,11 +436,9 @@ describe("Wallet Routes", () => {
       it("should pass correct data to service", async () => {
         mockSubmitAccount.mockResolvedValue(mockCreatedAccount);
 
-        await request(app)
-          .post("/api/wallet/accounts/submit")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSubmitPayload);
+        await authRequest("post", "/api/wallet/accounts/submit").send(
+          validSubmitPayload
+        );
 
         expect(mockSubmitAccount).toHaveBeenCalledWith(
           mockUser.id,
@@ -480,10 +456,7 @@ describe("Wallet Routes", () => {
     it("should return 200 with wallet on success", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -497,10 +470,7 @@ describe("Wallet Routes", () => {
         new CustomError(404, "Wallet not found. Please create a wallet first.")
       );
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -510,10 +480,7 @@ describe("Wallet Routes", () => {
     it("should pass user id to service", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
-      await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("get", "/api/wallet");
 
       expect(mockGetWallet).toHaveBeenCalledWith(mockUser.id);
     });
@@ -525,11 +492,9 @@ describe("Wallet Routes", () => {
   describe("GET /api/wallet/transactions", () => {
     describe("Validation", () => {
       it("should return 400 when limit is negative", async () => {
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .query({ limit: -5 })
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions").query({
+          limit: -5,
+        });
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -537,11 +502,9 @@ describe("Wallet Routes", () => {
       });
 
       it("should return 400 when limit exceeds max", async () => {
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .query({ limit: 150 })
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions").query({
+          limit: 150,
+        });
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -549,11 +512,9 @@ describe("Wallet Routes", () => {
       });
 
       it("should return 400 when offset is negative", async () => {
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .query({ offset: -10 })
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions").query({
+          offset: -10,
+        });
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
@@ -565,14 +526,13 @@ describe("Wallet Routes", () => {
       it("should return 200 with transactions on success", async () => {
         mockGetTransactions.mockResolvedValue(mockTransactionsResponse);
 
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions");
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe("Transactions retrieved successfully");
+        expect(response.body.message).toBe(
+          "Transactions retrieved successfully"
+        );
         expect(response.body.data).toBeDefined();
         expect(response.body.data.transactions).toBeDefined();
         expect(response.body.data.total).toBe(2);
@@ -581,11 +541,10 @@ describe("Wallet Routes", () => {
       it("should return 200 with custom limit and offset", async () => {
         mockGetTransactions.mockResolvedValue(mockTransactionsResponse);
 
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .query({ limit: 50, offset: 10 })
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions").query({
+          limit: 50,
+          offset: 10,
+        });
 
         expect(response.status).toBe(200);
         expect(mockGetTransactions).toHaveBeenCalledWith(mockUser.id, {
@@ -596,13 +555,13 @@ describe("Wallet Routes", () => {
 
       it("should return 404 when wallet not found", async () => {
         mockGetTransactions.mockRejectedValue(
-          new CustomError(404, "Wallet not found. Please create a wallet first.")
+          new CustomError(
+            404,
+            "Wallet not found. Please create a wallet first."
+          )
         );
 
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions");
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -613,10 +572,7 @@ describe("Wallet Routes", () => {
           new CustomError(404, "Wallet account not found")
         );
 
-        const response = await request(app)
-          .get("/api/wallet/transactions")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        const response = await authRequest("get", "/api/wallet/transactions");
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -625,10 +581,7 @@ describe("Wallet Routes", () => {
       it("should use default limit and offset when not provided", async () => {
         mockGetTransactions.mockResolvedValue(mockTransactionsResponse);
 
-        await request(app)
-          .get("/api/wallet/transactions")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN);
+        await authRequest("get", "/api/wallet/transactions");
 
         expect(mockGetTransactions).toHaveBeenCalledWith(mockUser.id, {
           limit: 20,
@@ -645,10 +598,7 @@ describe("Wallet Routes", () => {
     it("should always return success boolean", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(typeof response.body.success).toBe("boolean");
     });
@@ -656,10 +606,7 @@ describe("Wallet Routes", () => {
     it("should always return message string", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(typeof response.body.message).toBe("string");
     });
@@ -667,10 +614,7 @@ describe("Wallet Routes", () => {
     it("should return JSON content type", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(response.headers["content-type"]).toMatch(/application\/json/);
     });
@@ -678,10 +622,7 @@ describe("Wallet Routes", () => {
     it("should return error response for internal server errors", async () => {
       mockGetWallet.mockRejectedValue(new Error("Database connection failed"));
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -699,10 +640,7 @@ describe("Wallet Routes", () => {
         total: 0,
       });
 
-      const response = await request(app)
-        .get("/api/wallet/transactions")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet/transactions");
 
       expect(response.status).toBe(200);
       expect(response.body.data.transactions).toEqual([]);
@@ -712,10 +650,7 @@ describe("Wallet Routes", () => {
     it("should handle wallet without account", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithoutAccount);
 
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/wallet");
 
       expect(response.status).toBe(200);
       expect(response.body.data.account).toBeNull();
