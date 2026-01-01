@@ -206,7 +206,7 @@ describe("Zynk Routes", () => {
       mockCreateEntity.mockRejectedValue(error);
 
       const response = await authRequest("post", "/api/zynk/entities");
-      expectErrorResponse(response, error.statusCode, message);
+      expectErrorResponse(response, error.status, message);
     });
   });
 

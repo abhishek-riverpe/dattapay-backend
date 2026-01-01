@@ -146,7 +146,7 @@ describe("Transfer Routes", () => {
         mockSimulateTransfer.mockRejectedValue(error);
 
         const response = await authRequest("post", "/api/transfer/simulate").send(validSimulatePayload);
-        expectErrorResponse(response, error.statusCode, message);
+        expectErrorResponse(response, error.status, message);
       });
 
       it("should return 200 with simulation result on success", async () => {

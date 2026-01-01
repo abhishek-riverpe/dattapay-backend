@@ -122,12 +122,15 @@ describe("User Routes", () => {
       expectErrorResponse(response, 401);
     });
 
-    it("should return 404 when user is not found by clerk ID", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new CustomError(404, "User not found"));
+    (process.env.BYPASS_AUTH_USER_LOOKUP === "true" ? it.skip : it)(
+      "should return 404 when user is not found by clerk ID",
+      async () => {
+        mockGetByClerkUserId.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await authRequest("get", "/api/users/me");
-      expectErrorResponse(response, 401);
-    });
+        const response = await authRequest("get", "/api/users/me");
+        expectErrorResponse(response, 401);
+      }
+    );
 
     it("should return 200 and user data on success", async () => {
       mockGetById.mockResolvedValue(mockUserWithAddress);

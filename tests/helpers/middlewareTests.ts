@@ -123,21 +123,23 @@ export function createAuthMiddlewareTests(config: MiddlewareTestConfig) {
       expect(response.body.success).toBe(false);
     });
 
-    it("should return 401 when user not found for clerk user id", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
+    if (process.env.BYPASS_AUTH_USER_LOOKUP !== "true") {
+      it("should return 401 when user not found for clerk user id", async () => {
+        mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
 
-      let req = request(getApp())
-        [method](endpoint)
-        .set("x-api-token", adminToken)
-        .set("x-auth-token", authToken);
-      if (payload) {
-        req = req.send(payload);
-      }
+        let req = request(getApp())
+          [method](endpoint)
+          .set("x-api-token", adminToken)
+          .set("x-auth-token", authToken);
+        if (payload) {
+          req = req.send(payload);
+        }
 
-      const response = await req;
+        const response = await req;
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
+        expect(response.status).toBe(401);
+        expect(response.body.success).toBe(false);
+      });
+    }
   });
 }

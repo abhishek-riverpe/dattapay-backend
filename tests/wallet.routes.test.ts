@@ -9,6 +9,8 @@ import {
 import type { Express, Router } from "express";
 import request from "supertest";
 import CustomError from "../lib/Error";
+import userService from "../services/user.service";
+import walletService from "../services/wallet.service";
 import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
@@ -42,28 +44,6 @@ const mockSubmitAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetWallet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetTransactions = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
-// Use unstable_mockModule for ESM compatibility
-jest.unstable_mockModule("@clerk/express", () => ({
-  verifyToken: mockVerifyToken,
-}));
-
-jest.unstable_mockModule("../services/user.service", () => ({
-  default: {
-    getByClerkUserId: mockGetByClerkUserId,
-  },
-}));
-
-jest.unstable_mockModule("../services/wallet.service", () => ({
-  default: {
-    prepareWallet: mockPrepareWallet,
-    submitWallet: mockSubmitWallet,
-    prepareAccount: mockPrepareAccount,
-    submitAccount: mockSubmitAccount,
-    getWallet: mockGetWallet,
-    getTransactions: mockGetTransactions,
-  },
-}));
-
 // Dynamic import after mocking
 let app: Express;
 let createTestApp: (config: TestAppConfig) => Express;
@@ -77,6 +57,7 @@ beforeAll(async () => {
 
 describe("Wallet Routes", () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
 
     // Create fresh app for each test
@@ -84,6 +65,29 @@ describe("Wallet Routes", () => {
       basePath: "/api/wallet",
       routes: walletRoutes,
     });
+
+    // Wire spies to concrete services so controllers use our mocks
+    jest
+      .spyOn(userService, "getByClerkUserId")
+      .mockImplementation(mockGetByClerkUserId as never);
+    jest
+      .spyOn(walletService, "prepareWallet")
+      .mockImplementation(mockPrepareWallet as never);
+    jest
+      .spyOn(walletService, "submitWallet")
+      .mockImplementation(mockSubmitWallet as never);
+    jest
+      .spyOn(walletService, "prepareAccount")
+      .mockImplementation(mockPrepareAccount as never);
+    jest
+      .spyOn(walletService, "submitAccount")
+      .mockImplementation(mockSubmitAccount as never);
+    jest
+      .spyOn(walletService, "getWallet")
+      .mockImplementation(mockGetWallet as never);
+    jest
+      .spyOn(walletService, "getTransactions")
+      .mockImplementation(mockGetTransactions as never);
 
     // Default mock implementations for auth
     mockVerifyToken.mockResolvedValue({ sub: "clerk_user_123" });

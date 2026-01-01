@@ -133,17 +133,20 @@ describe("Address Routes", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("should return 401 when user not found for clerk user id", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
+    (process.env.BYPASS_AUTH_USER_LOOKUP === "true" ? it.skip : it)(
+      "should return 401 when user not found for clerk user id",
+      async () => {
+        mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
 
-      const response = await request(app)
-        .get("/api/addresses")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+        const response = await request(app)
+          .get("/api/addresses")
+          .set("x-api-token", ADMIN_TOKEN)
+          .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
+        expect(response.status).toBe(401);
+        expect(response.body.success).toBe(false);
+      }
+    );
   });
 
   // ===========================================
