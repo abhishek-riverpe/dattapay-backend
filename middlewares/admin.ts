@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import Error from "../lib/Error";
 
 function base64UrlDecode(str: string): string {
-  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = str.replaceAll("-", "+").replaceAll("_", "/");
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   return Buffer.from(base64 + padding, "base64").toString("utf-8");
 }
@@ -11,8 +11,8 @@ function base64UrlDecode(str: string): string {
 function base64UrlEncode(buffer: Buffer): string {
   let encoded = buffer
     .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_");
 
   // Remove trailing '=' padding without regex
   while (encoded.endsWith("=")) {

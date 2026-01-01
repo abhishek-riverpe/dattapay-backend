@@ -3,8 +3,6 @@ import {
   baseAddress,
   baseUserData,
   USER_ID,
-  ADMIN_TOKEN,
-  AUTH_TOKEN,
 } from "./common.fixtures";
 
 // Domain-specific ID constants
@@ -92,7 +90,7 @@ export const mockCreatedExternalAccount = {
   walletId: validCreatePayload.walletId,
 };
 
-export { ADMIN_TOKEN, AUTH_TOKEN };
+export { ADMIN_TOKEN, AUTH_TOKEN } from "./common.fixtures";
 
 // Valid UUID for tests (reuse EXTERNAL_ACCOUNT_ID for consistency)
 export const VALID_UUID = EXTERNAL_ACCOUNT_ID;

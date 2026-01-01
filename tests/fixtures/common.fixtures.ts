@@ -1,5 +1,4 @@
 import type { User, Address } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
 // Common ID constants
 export const USER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -48,5 +47,5 @@ export const baseMockUser = {
 };
 
 // Common tokens
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
+export { VALID_ADMIN_TOKEN as ADMIN_TOKEN } from "../helpers/jwt";
 export const AUTH_TOKEN = "valid-auth-token";

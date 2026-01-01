@@ -14,7 +14,6 @@ import {
   mockUpdatedUser,
   mockFundingAccount,
   validKycApprovedEvent,
-  transferEvent,
   nonApprovedKycEvent,
   generateWebhookSignature,
   generateInvalidSignature,
