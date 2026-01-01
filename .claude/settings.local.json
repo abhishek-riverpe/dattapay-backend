@@ -11,7 +11,9 @@
       "Bash(grep:*)",
       "Bash(bun add:*)",
       "Bash(bun run test)",
-      "Bash(bun run test:*)"
+      "Bash(bun run test:*)",
+      "Bash(bun run:*)",
+      "Bash(NODE_OPTIONS=\"--experimental-vm-modules\" npx jest:*)"
     ]
   }
 }
