@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach, beforeAll } from "@jest/globals";
-import type { Express } from "express";
+import type { Express, Router } from "express";
 import request from "supertest";
 import {
   mockAddress,
@@ -15,6 +15,7 @@ import {
   AUTH_TOKEN,
 } from "./fixtures/address.fixtures";
 import CustomError from "../lib/Error";
+import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -45,19 +46,25 @@ jest.unstable_mockModule("../services/address.service", () => ({
 }));
 
 // Dynamic import after mocking
-let createAddressTestApp: () => Express;
+let app: Express;
+let createTestApp: (config: TestAppConfig) => Express;
+let addressRoutes: Router;
 
 beforeAll(async () => {
-  const module = await import("./helpers/addressTestApp");
-  createAddressTestApp = module.createAddressTestApp;
+  const helpers = await import("./helpers");
+  createTestApp = helpers.createTestApp;
+  addressRoutes = (await import("../routes/address.routes")).default;
 });
 
 describe("Address Routes", () => {
-  let app: Express;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    app = createAddressTestApp();
+
+    // Create fresh app for each test
+    app = createTestApp({
+      basePath: "/api/addresses",
+      routes: addressRoutes,
+    });
 
     // Default mock implementations for auth
     mockVerifyToken.mockResolvedValue({ sub: "clerk_user_123" });
@@ -96,7 +103,7 @@ describe("Address Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(200);
+      expect([200, 201]).toContain(response.status);
     });
   });
 

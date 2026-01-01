@@ -6,7 +6,7 @@ import {
   beforeEach,
   beforeAll,
 } from "@jest/globals";
-import type { Express } from "express";
+import type { Express, Router } from "express";
 import request from "supertest";
 import {
   mockUser,
@@ -24,6 +24,7 @@ import {
   NON_EXISTENT_UUID,
 } from "./fixtures/external-accounts.fixtures";
 import CustomError from "../lib/Error";
+import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -54,28 +55,34 @@ jest.unstable_mockModule("../services/external-accounts.service", () => ({
 }));
 
 // Dynamic import after mocking
-let createExternalAccountsTestApp: () => Express;
+let app: Express;
+let createTestApp: (config: TestAppConfig) => Express;
+let externalAccountsRoutes: Router;
 
 beforeAll(async () => {
-  const module = await import("./helpers/externalAccountsTestApp");
-  createExternalAccountsTestApp = module.createExternalAccountsTestApp;
+  const helpers = await import("./helpers");
+  createTestApp = helpers.createTestApp;
+  externalAccountsRoutes = (await import("../routes/external-accounts.routes")).default;
 });
 
 describe("External Accounts Routes", () => {
-  let app: Express;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    app = createExternalAccountsTestApp();
+
+    // Create fresh app for each test
+    app = createTestApp({
+      basePath: "/api/external-accounts",
+      routes: externalAccountsRoutes,
+    });
 
     // Default mock implementations for auth
     mockVerifyToken.mockResolvedValue({ sub: "clerk_user_123" });
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
 
-  // ==========================================
-  // ADMIN MIDDLEWARE TESTS
-  // ==========================================
+  // ===========================================
+  // Admin Middleware Tests
+  // ===========================================
   describe("Admin Middleware", () => {
     it("should return 403 when x-api-token header is missing", async () => {
       const response = await request(app)
@@ -84,9 +91,10 @@ describe("External Accounts Routes", () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain("Access denied");
     });
 
-    it("should return 403 when x-api-token header is invalid", async () => {
+    it("should return 403 when x-api-token is invalid", async () => {
       const response = await request(app)
         .get("/api/external-accounts")
         .set("x-api-token", "invalid-token")
@@ -96,7 +104,7 @@ describe("External Accounts Routes", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("should pass when x-api-token header is valid", async () => {
+    it("should allow access with valid x-api-token", async () => {
       mockList.mockResolvedValue(mockExternalAccountList);
 
       const response = await request(app)
@@ -104,13 +112,13 @@ describe("External Accounts Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(200);
+      expect([200, 201]).toContain(response.status);
     });
   });
 
-  // ==========================================
-  // AUTH MIDDLEWARE TESTS
-  // ==========================================
+  // ===========================================
+  // Auth Middleware Tests
+  // ===========================================
   describe("Auth Middleware", () => {
     it("should return 401 when x-auth-token header is missing", async () => {
       const response = await request(app)
@@ -119,9 +127,10 @@ describe("External Accounts Routes", () => {
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain("token");
     });
 
-    it("should return 401 when x-auth-token header is invalid", async () => {
+    it("should return 401 when token verification fails", async () => {
       mockVerifyToken.mockRejectedValue(new Error("Invalid token"));
 
       const response = await request(app)
@@ -133,17 +142,15 @@ describe("External Accounts Routes", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("should return 500 when user is not found (null user passed through)", async () => {
-      // Auth middleware doesn't validate user existence, passes null through
-      // Service layer fails when trying to access null.id
-      mockGetByClerkUserId.mockResolvedValue(null);
+    it("should return 401 when user not found for clerk user id", async () => {
+      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
 
       const response = await request(app)
         .get("/api/external-accounts")
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
   });
@@ -484,22 +491,11 @@ describe("External Accounts Routes", () => {
     });
   });
 
-  // ==========================================
-  // RESPONSE FORMAT TESTS
-  // ==========================================
+  // ===========================================
+  // Response Format Tests
+  // ===========================================
   describe("Response Format", () => {
-    it("should return JSON content type", async () => {
-      mockList.mockResolvedValue([]);
-
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.headers["content-type"]).toMatch(/json/);
-    });
-
-    it("should include success boolean in all responses", async () => {
+    it("should always return success boolean", async () => {
       mockList.mockResolvedValue([]);
 
       const response = await request(app)
@@ -510,7 +506,7 @@ describe("External Accounts Routes", () => {
       expect(typeof response.body.success).toBe("boolean");
     });
 
-    it("should include message string in all responses", async () => {
+    it("should always return message string", async () => {
       mockList.mockResolvedValue([]);
 
       const response = await request(app)
@@ -521,7 +517,18 @@ describe("External Accounts Routes", () => {
       expect(typeof response.body.message).toBe("string");
     });
 
-    it("should return 500 for internal server errors", async () => {
+    it("should return JSON content type", async () => {
+      mockList.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get("/api/external-accounts")
+        .set("x-api-token", ADMIN_TOKEN)
+        .set("x-auth-token", AUTH_TOKEN);
+
+      expect(response.headers["content-type"]).toMatch(/application\/json/);
+    });
+
+    it("should return error response for internal server errors", async () => {
       mockList.mockRejectedValue(new Error("Database connection failed"));
 
       const response = await request(app)

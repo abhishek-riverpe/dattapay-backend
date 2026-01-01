@@ -1,0 +1,123 @@
+import { describe, it, expect } from "@jest/globals";
+import type { Express } from "express";
+import request from "supertest";
+
+export interface ResponseFormatTestConfig {
+  getApp: () => Express;
+  endpoint: string;
+  method: "get" | "post" | "put" | "delete" | "patch";
+  adminToken?: string;
+  authToken?: string;
+  setupSuccessMock: () => void;
+  setupErrorMock: () => void;
+  payload?: Record<string, unknown>;
+  customHeaders?: Record<string, string>;
+}
+
+/**
+ * Creates Response Format test suite
+ */
+export function createResponseFormatTests(config: ResponseFormatTestConfig) {
+  const {
+    getApp,
+    endpoint,
+    method,
+    adminToken,
+    authToken,
+    setupSuccessMock,
+    setupErrorMock,
+    payload,
+    customHeaders = {},
+  } = config;
+
+  describe("Response Format", () => {
+    it("should always return success boolean", async () => {
+      setupSuccessMock();
+
+      let req = request(getApp())[method](endpoint);
+      if (adminToken) {
+        req = req.set("x-api-token", adminToken);
+      }
+      if (authToken) {
+        req = req.set("x-auth-token", authToken);
+      }
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        req = req.set(key, value);
+      });
+      if (payload) {
+        req = req.send(payload);
+      }
+
+      const response = await req;
+
+      expect(typeof response.body.success).toBe("boolean");
+    });
+
+    it("should always return message string", async () => {
+      setupSuccessMock();
+
+      let req = request(getApp())[method](endpoint);
+      if (adminToken) {
+        req = req.set("x-api-token", adminToken);
+      }
+      if (authToken) {
+        req = req.set("x-auth-token", authToken);
+      }
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        req = req.set(key, value);
+      });
+      if (payload) {
+        req = req.send(payload);
+      }
+
+      const response = await req;
+
+      expect(typeof response.body.message).toBe("string");
+    });
+
+    it("should return JSON content type", async () => {
+      setupSuccessMock();
+
+      let req = request(getApp())[method](endpoint);
+      if (adminToken) {
+        req = req.set("x-api-token", adminToken);
+      }
+      if (authToken) {
+        req = req.set("x-auth-token", authToken);
+      }
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        req = req.set(key, value);
+      });
+      if (payload) {
+        req = req.send(payload);
+      }
+
+      const response = await req;
+
+      expect(response.headers["content-type"]).toMatch(/application\/json/);
+    });
+
+    it("should return error response for internal server errors", async () => {
+      setupErrorMock();
+
+      let req = request(getApp())[method](endpoint);
+      if (adminToken) {
+        req = req.set("x-api-token", adminToken);
+      }
+      if (authToken) {
+        req = req.set("x-auth-token", authToken);
+      }
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        req = req.set(key, value);
+      });
+      if (payload) {
+        req = req.send(payload);
+      }
+
+      const response = await req;
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+    });
+  });
+}

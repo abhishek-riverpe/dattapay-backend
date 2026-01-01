@@ -7,7 +7,7 @@ import {
   beforeAll,
   afterEach,
 } from "@jest/globals";
-import type { Express } from "express";
+import type { Express, Router } from "express";
 import request from "supertest";
 import {
   mockUser,
@@ -20,7 +20,7 @@ import {
   generateInvalidSignature,
   WEBHOOK_SECRET,
 } from "./fixtures/webhook.fixtures";
-import CustomError from "../lib/Error";
+import type { TestAppConfig } from "./helpers";
 
 // Store original env
 const originalEnv = process.env;
@@ -45,19 +45,28 @@ jest.unstable_mockModule("../services/zynk.service", () => ({
 }));
 
 // Dynamic import after mocking
-let createWebhookTestApp: () => Express;
+let app: Express;
+let createTestApp: (config: TestAppConfig) => Express;
+let webhookRoutes: Router;
 
 beforeAll(async () => {
-  const module = await import("./helpers/webhookTestApp");
-  createWebhookTestApp = module.createWebhookTestApp;
+  const helpers = await import("./helpers");
+  createTestApp = helpers.createTestApp;
+  webhookRoutes = (await import("../routes/webhook.routes")).default;
 });
 
 describe("Webhook Routes", () => {
-  let app: Express;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    app = createWebhookTestApp();
+
+    // Create fresh app for each test
+    // Note: The webhook route itself defines "/webhook", so we use "/api" as basePath
+    app = createTestApp({
+      basePath: "/api",
+      routes: webhookRoutes,
+      useAdmin: false,
+      useAuth: false,
+    });
 
     // Set the webhook secret in environment
     process.env = { ...originalEnv, ZYNK_WEBHOOK_SECRET: WEBHOOK_SECRET };
@@ -245,12 +254,18 @@ describe("Webhook Routes", () => {
   describe("Error Handling", () => {
     it("should return 500 when webhook secret is not configured", async () => {
       process.env = { ...originalEnv, ZYNK_WEBHOOK_SECRET: undefined };
-      // Need to recreate app to pick up new env
-      app = createWebhookTestApp();
+      // Need to reimport to pick up new env
+      const webhookRoutes = (await import("../routes/webhook.routes")).default;
+      const testApp = createTestApp({
+        basePath: "/api",
+        routes: webhookRoutes,
+        useAdmin: false,
+        useAuth: false,
+      });
 
       const signature = generateWebhookSignature(validKycApprovedEvent);
 
-      const response = await request(app)
+      const response = await request(testApp)
         .post("/api/webhook")
         .set("z-webhook-signature", signature)
         .send(validKycApprovedEvent);
@@ -286,22 +301,17 @@ describe("Webhook Routes", () => {
     });
   });
 
-  // ==========================================
-  // RESPONSE FORMAT TESTS
-  // ==========================================
+  // ===========================================
+  // Response Format Tests
+  // ===========================================
   describe("Response Format", () => {
-    it("should return JSON content type", async () => {
-      const signature = generateWebhookSignature(validKycApprovedEvent);
-
-      const response = await request(app)
-        .post("/api/webhook")
-        .set("z-webhook-signature", signature)
-        .send(validKycApprovedEvent);
-
-      expect(response.headers["content-type"]).toMatch(/json/);
-    });
-
-    it("should include success boolean in responses", async () => {
+    it("should always return success boolean", async () => {
+      mockFindByZynkEntityId.mockResolvedValue(mockUser);
+      mockUpdate.mockResolvedValue(mockUpdatedUser);
+      mockCreateFundingAccount.mockResolvedValue({
+        user: mockUpdatedUser,
+        fundingAccount: mockFundingAccount,
+      });
       const signature = generateWebhookSignature(validKycApprovedEvent);
 
       const response = await request(app)
@@ -312,7 +322,13 @@ describe("Webhook Routes", () => {
       expect(typeof response.body.success).toBe("boolean");
     });
 
-    it("should include message string in responses", async () => {
+    it("should always return message string", async () => {
+      mockFindByZynkEntityId.mockResolvedValue(mockUser);
+      mockUpdate.mockResolvedValue(mockUpdatedUser);
+      mockCreateFundingAccount.mockResolvedValue({
+        user: mockUpdatedUser,
+        fundingAccount: mockFundingAccount,
+      });
       const signature = generateWebhookSignature(validKycApprovedEvent);
 
       const response = await request(app)
@@ -321,6 +337,37 @@ describe("Webhook Routes", () => {
         .send(validKycApprovedEvent);
 
       expect(typeof response.body.message).toBe("string");
+    });
+
+    it("should return JSON content type", async () => {
+      mockFindByZynkEntityId.mockResolvedValue(mockUser);
+      mockUpdate.mockResolvedValue(mockUpdatedUser);
+      mockCreateFundingAccount.mockResolvedValue({
+        user: mockUpdatedUser,
+        fundingAccount: mockFundingAccount,
+      });
+      const signature = generateWebhookSignature(validKycApprovedEvent);
+
+      const response = await request(app)
+        .post("/api/webhook")
+        .set("z-webhook-signature", signature)
+        .send(validKycApprovedEvent);
+
+      expect(response.headers["content-type"]).toMatch(/application\/json/);
+    });
+
+    it("should return error response for internal server errors", async () => {
+      mockFindByZynkEntityId.mockResolvedValue(mockUser);
+      mockUpdate.mockRejectedValue(new Error("Database error"));
+      const signature = generateWebhookSignature(validKycApprovedEvent);
+
+      const response = await request(app)
+        .post("/api/webhook")
+        .set("z-webhook-signature", signature)
+        .send(validKycApprovedEvent);
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
     });
   });
 

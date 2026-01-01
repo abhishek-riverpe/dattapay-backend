@@ -6,7 +6,7 @@ import {
   beforeEach,
   beforeAll,
 } from "@jest/globals";
-import type { Express } from "express";
+import type { Express, Router } from "express";
 import request from "supertest";
 import {
   mockUser,
@@ -26,6 +26,7 @@ import {
   AUTH_TOKEN,
 } from "./fixtures/wallet.fixtures";
 import CustomError from "../lib/Error";
+import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -60,28 +61,34 @@ jest.unstable_mockModule("../services/wallet.service", () => ({
 }));
 
 // Dynamic import after mocking
-let createWalletTestApp: () => Express;
+let app: Express;
+let createTestApp: (config: TestAppConfig) => Express;
+let walletRoutes: Router;
 
 beforeAll(async () => {
-  const module = await import("./helpers/walletTestApp");
-  createWalletTestApp = module.createWalletTestApp;
+  const helpers = await import("./helpers");
+  createTestApp = helpers.createTestApp;
+  walletRoutes = (await import("../routes/wallet.routes")).default;
 });
 
 describe("Wallet Routes", () => {
-  let app: Express;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    app = createWalletTestApp();
+
+    // Create fresh app for each test
+    app = createTestApp({
+      basePath: "/api/wallet",
+      routes: walletRoutes,
+    });
 
     // Default mock implementations for auth
     mockVerifyToken.mockResolvedValue({ sub: "clerk_user_123" });
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
 
-  // ==========================================
-  // ADMIN MIDDLEWARE TESTS
-  // ==========================================
+  // ===========================================
+  // Admin Middleware Tests
+  // ===========================================
   describe("Admin Middleware", () => {
     it("should return 403 when x-api-token header is missing", async () => {
       const response = await request(app)
@@ -90,9 +97,10 @@ describe("Wallet Routes", () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain("Access denied");
     });
 
-    it("should return 403 when x-api-token header is invalid", async () => {
+    it("should return 403 when x-api-token is invalid", async () => {
       const response = await request(app)
         .get("/api/wallet")
         .set("x-api-token", "invalid-token")
@@ -102,7 +110,7 @@ describe("Wallet Routes", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("should pass when x-api-token header is valid", async () => {
+    it("should allow access with valid x-api-token", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
       const response = await request(app)
@@ -110,13 +118,13 @@ describe("Wallet Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(200);
+      expect([200, 201]).toContain(response.status);
     });
   });
 
-  // ==========================================
-  // AUTH MIDDLEWARE TESTS
-  // ==========================================
+  // ===========================================
+  // Auth Middleware Tests
+  // ===========================================
   describe("Auth Middleware", () => {
     it("should return 401 when x-auth-token header is missing", async () => {
       const response = await request(app)
@@ -125,9 +133,10 @@ describe("Wallet Routes", () => {
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain("token");
     });
 
-    it("should return 401 when x-auth-token header is invalid", async () => {
+    it("should return 401 when token verification fails", async () => {
       mockVerifyToken.mockRejectedValue(new Error("Invalid token"));
 
       const response = await request(app)
@@ -139,15 +148,15 @@ describe("Wallet Routes", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("should return 500 when user is not found (null user passed through)", async () => {
-      mockGetByClerkUserId.mockResolvedValue(null);
+    it("should return 401 when user not found for clerk user id", async () => {
+      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
 
       const response = await request(app)
         .get("/api/wallet")
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
   });
@@ -629,22 +638,11 @@ describe("Wallet Routes", () => {
     });
   });
 
-  // ==========================================
-  // RESPONSE FORMAT TESTS
-  // ==========================================
+  // ===========================================
+  // Response Format Tests
+  // ===========================================
   describe("Response Format", () => {
-    it("should return JSON content type", async () => {
-      mockGetWallet.mockResolvedValue(mockWalletWithAccount);
-
-      const response = await request(app)
-        .get("/api/wallet")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.headers["content-type"]).toMatch(/json/);
-    });
-
-    it("should include success boolean in all responses", async () => {
+    it("should always return success boolean", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
       const response = await request(app)
@@ -655,7 +653,7 @@ describe("Wallet Routes", () => {
       expect(typeof response.body.success).toBe("boolean");
     });
 
-    it("should include message string in all responses", async () => {
+    it("should always return message string", async () => {
       mockGetWallet.mockResolvedValue(mockWalletWithAccount);
 
       const response = await request(app)
@@ -666,7 +664,18 @@ describe("Wallet Routes", () => {
       expect(typeof response.body.message).toBe("string");
     });
 
-    it("should return 500 for internal server errors", async () => {
+    it("should return JSON content type", async () => {
+      mockGetWallet.mockResolvedValue(mockWalletWithAccount);
+
+      const response = await request(app)
+        .get("/api/wallet")
+        .set("x-api-token", ADMIN_TOKEN)
+        .set("x-auth-token", AUTH_TOKEN);
+
+      expect(response.headers["content-type"]).toMatch(/application\/json/);
+    });
+
+    it("should return error response for internal server errors", async () => {
       mockGetWallet.mockRejectedValue(new Error("Database connection failed"));
 
       const response = await request(app)

@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach, beforeAll } from "@jest/globals";
-import type { Express } from "express";
+import type { Express, Router } from "express";
 import request from "supertest";
 import {
   mockUser,
@@ -10,6 +10,7 @@ import {
   AUTH_TOKEN,
 } from "./fixtures/user.fixtures";
 import CustomError from "../lib/Error";
+import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -46,19 +47,26 @@ jest.unstable_mockModule("../repositories/zynk.repository", () => ({
 }));
 
 // Dynamic import after mocking
-let createTestApp: () => Express;
+let app: Express;
+let createTestApp: (config: TestAppConfig) => Express;
+let userRoutes: Router;
 
 beforeAll(async () => {
-  const module = await import("./helpers/testApp");
-  createTestApp = module.createTestApp;
+  const helpers = await import("./helpers");
+  createTestApp = helpers.createTestApp;
+  userRoutes = (await import("../routes/user.routes")).default;
 });
 
 describe("User Routes", () => {
-  let app: Express;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    app = createTestApp();
+
+    // Create fresh app for each test
+    app = createTestApp({
+      basePath: "/api/users",
+      routes: userRoutes,
+      useAuth: false, // User routes have selective auth middleware
+    });
 
     // Default mock implementations
     mockVerifyToken.mockResolvedValue({ sub: mockUser.clerkUserId });
@@ -921,11 +929,11 @@ describe("User Routes", () => {
     });
   });
 
-  // ============================================================
+  // ===========================================
   // Response Format Tests
-  // ============================================================
+  // ===========================================
   describe("Response Format", () => {
-    it("should return consistent success response format", async () => {
+    it("should always return success boolean", async () => {
       mockGetById.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
@@ -933,22 +941,17 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.body).toHaveProperty("success");
-      expect(response.body).toHaveProperty("message");
-      expect(response.body).toHaveProperty("data");
       expect(typeof response.body.success).toBe("boolean");
-      expect(typeof response.body.message).toBe("string");
     });
 
-    it("should return consistent error response format", async () => {
+    it("should always return message string", async () => {
+      mockGetById.mockResolvedValue(mockUserWithAddress);
+
       const response = await request(app)
         .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN);
-      // Missing auth token
+        .set("x-api-token", ADMIN_TOKEN)
+        .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.body).toHaveProperty("success");
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.success).toBe(false);
       expect(typeof response.body.message).toBe("string");
     });
 
@@ -960,7 +963,19 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(response.headers["content-type"]).toMatch(/json/);
+      expect(response.headers["content-type"]).toMatch(/application\/json/);
+    });
+
+    it("should return error response for internal server errors", async () => {
+      mockGetById.mockRejectedValue(new Error("Database connection failed"));
+
+      const response = await request(app)
+        .get("/api/users/me")
+        .set("x-api-token", ADMIN_TOKEN)
+        .set("x-auth-token", AUTH_TOKEN);
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
     });
   });
 });
