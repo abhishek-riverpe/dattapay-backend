@@ -1,42 +1,18 @@
-import type { User, Address } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
+import {
+  baseAddress,
+  baseUserData as commonBaseUserData,
+  ZYNK_ENTITY_ID,
+  FUNDING_ACCOUNT_ID,
+  ADMIN_TOKEN,
+  AUTH_TOKEN,
+} from "./common.fixtures";
 
-// Base address for user relations
-const baseAddress: Address = {
-  id: "660e8400-e29b-41d4-a716-446655440001",
-  addressLine1: "123 Main St",
-  addressLine2: null,
-  locality: "Downtown",
-  city: "New York",
-  state: "NY",
-  country: "USA",
-  postalCode: "10001",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  created_at: new Date(),
-  updated_at: new Date(),
-};
-
-// Common ID constants
-const ZYNK_ENTITY_ID = "zynk_entity_123";
-const FUNDING_ACCOUNT_ID = "funding_account_123";
-
-// Base user data
-const baseUserData: User = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
-  clerkUserId: "clerk_user_123",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  publicKey: "pub_key_123",
-  phoneNumberPrefix: "+1",
-  phoneNumber: "5551234567",
-  nationality: "US",
-  dateOfBirth: new Date("1990-01-15"),
-  accountStatus: "INITIAL",
+// Zynk-specific base user data (INITIAL status, no zynk data yet)
+const baseUserData = {
+  ...commonBaseUserData,
+  accountStatus: "INITIAL" as const,
   zynkEntityId: null,
   zynkFundingAccountId: null,
-  created_at: new Date(),
-  updated_at: new Date(),
 };
 
 // User for auth middleware (basic user without zynk data)
@@ -121,5 +97,4 @@ export const mockDeactivatedFundingAccount = {
   status: "inactive",
 };
 
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
-export const AUTH_TOKEN = "valid-auth-token";
+export { ADMIN_TOKEN, AUTH_TOKEN };

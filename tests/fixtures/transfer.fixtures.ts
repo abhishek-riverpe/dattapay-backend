@@ -1,39 +1,11 @@
-import type { User, ExternalAccount, Address } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
-
-// Base address for user relations
-const baseAddress: Address = {
-  id: "660e8400-e29b-41d4-a716-446655440001",
-  addressLine1: "123 Main St",
-  addressLine2: null,
-  locality: "Downtown",
-  city: "New York",
-  state: "NY",
-  country: "USA",
-  postalCode: "10001",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  created_at: new Date(),
-  updated_at: new Date(),
-};
-
-// Base user data with KYC completed
-const baseUserData: User = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
-  clerkUserId: "clerk_user_123",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  publicKey: "pub_key_123",
-  phoneNumberPrefix: "+1",
-  phoneNumber: "5551234567",
-  nationality: "US",
-  dateOfBirth: new Date("1990-01-15"),
-  accountStatus: "ACTIVE",
-  zynkEntityId: "zynk_entity_123",
-  zynkFundingAccountId: "funding_account_123",
-  created_at: new Date(),
-  updated_at: new Date(),
-};
+import type { ExternalAccount } from "../../generated/prisma/client";
+import {
+  baseAddress,
+  baseUserData,
+  USER_ID,
+  ADMIN_TOKEN,
+  AUTH_TOKEN,
+} from "./common.fixtures";
 
 // User for auth middleware (with KYC completed)
 export const mockUser = {
@@ -52,7 +24,7 @@ export const mockUserWithoutZynkEntity = {
 // Base external account (non-custodial wallet - source)
 const baseNonCustodialWallet: ExternalAccount = {
   id: "770e8400-e29b-41d4-a716-446655440000",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
+  userId: USER_ID,
   walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
   label: "My Wallet",
   zynkExternalAccountId: "zynk_ext_acc_source_123",
@@ -78,7 +50,7 @@ export const mockSourceWalletWithoutZynk = {
 // Destination external account (withdrawal type)
 const baseDestinationAccount: ExternalAccount = {
   id: "770e8400-e29b-41d4-a716-446655440001",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
+  userId: USER_ID,
   walletAddress: "0xabcdef1234567890abcdef1234567890abcdef12",
   label: "Destination Wallet",
   zynkExternalAccountId: "zynk_ext_acc_dest_123",
@@ -175,5 +147,4 @@ export const mockTransferResponse = {
   message: "Transaction execution started successfully",
 };
 
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
-export const AUTH_TOKEN = "valid-auth-token";
+export { ADMIN_TOKEN, AUTH_TOKEN };

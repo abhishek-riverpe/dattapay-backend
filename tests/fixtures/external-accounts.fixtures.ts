@@ -1,46 +1,14 @@
-import type { User, ExternalAccount, Address } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
+import type { ExternalAccount } from "../../generated/prisma/client";
+import {
+  baseAddress,
+  baseUserData,
+  USER_ID,
+  ADMIN_TOKEN,
+  AUTH_TOKEN,
+} from "./common.fixtures";
 
-// Common ID constants
-const USER_ID = "550e8400-e29b-41d4-a716-446655440000";
-const ADDRESS_ID = "660e8400-e29b-41d4-a716-446655440001";
+// Domain-specific ID constants
 const EXTERNAL_ACCOUNT_ID = "770e8400-e29b-41d4-a716-446655440000";
-const ZYNK_ENTITY_ID = "zynk_entity_123";
-const FUNDING_ACCOUNT_ID = "funding_account_123";
-
-// Base address for user relations
-const baseAddress: Address = {
-  id: ADDRESS_ID,
-  addressLine1: "123 Main St",
-  addressLine2: null,
-  locality: "Downtown",
-  city: "New York",
-  state: "NY",
-  country: "USA",
-  postalCode: "10001",
-  userId: USER_ID,
-  created_at: new Date(),
-  updated_at: new Date(),
-};
-
-// Base user data
-const baseUserData: User = {
-  id: USER_ID,
-  clerkUserId: "clerk_user_123",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  publicKey: "pub_key_123",
-  phoneNumberPrefix: "+1",
-  phoneNumber: "5551234567",
-  nationality: "US",
-  dateOfBirth: new Date("1990-01-15"),
-  accountStatus: "ACTIVE",
-  zynkEntityId: ZYNK_ENTITY_ID,
-  zynkFundingAccountId: FUNDING_ACCOUNT_ID,
-  created_at: new Date(),
-  updated_at: new Date(),
-};
 
 // User for auth middleware (with zynk entity)
 export const mockUser = {
@@ -124,8 +92,7 @@ export const mockCreatedExternalAccount = {
   walletId: validCreatePayload.walletId,
 };
 
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
-export const AUTH_TOKEN = "valid-auth-token";
+export { ADMIN_TOKEN, AUTH_TOKEN };
 
 // Valid UUID for tests (reuse EXTERNAL_ACCOUNT_ID for consistency)
 export const VALID_UUID = EXTERNAL_ACCOUNT_ID;

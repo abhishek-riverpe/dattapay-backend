@@ -1,39 +1,11 @@
-import type { User, Wallet, WalletAccount, Address } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
-
-// Base address for user relations
-const baseAddress: Address = {
-  id: "660e8400-e29b-41d4-a716-446655440001",
-  addressLine1: "123 Main St",
-  addressLine2: null,
-  locality: "Downtown",
-  city: "New York",
-  state: "NY",
-  country: "USA",
-  postalCode: "10001",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  created_at: new Date(),
-  updated_at: new Date(),
-};
-
-// Base user data with KYC completed
-const baseUserData: User = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
-  clerkUserId: "clerk_user_123",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  publicKey: "pub_key_123",
-  phoneNumberPrefix: "+1",
-  phoneNumber: "5551234567",
-  nationality: "US",
-  dateOfBirth: new Date("1990-01-15"),
-  accountStatus: "ACTIVE",
-  zynkEntityId: "zynk_entity_123",
-  zynkFundingAccountId: "funding_account_123",
-  created_at: new Date(),
-  updated_at: new Date(),
-};
+import type { Wallet, WalletAccount } from "../../generated/prisma/client";
+import {
+  baseAddress,
+  baseUserData,
+  USER_ID,
+  ADMIN_TOKEN,
+  AUTH_TOKEN,
+} from "./common.fixtures";
 
 // User for auth middleware (with KYC completed)
 export const mockUser = {
@@ -65,7 +37,7 @@ const baseWalletAccount: WalletAccount = {
 // Base wallet data
 const baseWalletData: Wallet = {
   id: "880e8400-e29b-41d4-a716-446655440000",
-  userId: "550e8400-e29b-41d4-a716-446655440000",
+  userId: USER_ID,
   zynkWalletId: "zynk_wallet_123",
   walletName: "My Wallet",
   chain: "SOLANA",
@@ -172,5 +144,4 @@ export const invalidTransactionsQueries = {
   negativeOffset: { offset: -10 },
 } as const;
 
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
-export const AUTH_TOKEN = "valid-auth-token";
+export { ADMIN_TOKEN, AUTH_TOKEN };
