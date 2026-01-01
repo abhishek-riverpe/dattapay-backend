@@ -1,11 +1,16 @@
 import { createHmac } from "crypto";
 
 function base64UrlEncode(buffer: Buffer): string {
-  return buffer
+  let encoded = buffer
     .toString("base64")
     .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replace(/\//g, "_");
+
+  // Remove trailing '=' padding without regex
+  while (encoded.endsWith("=")) {
+    encoded = encoded.slice(0, -1);
+  }
+  return encoded;
 }
 
 /**
