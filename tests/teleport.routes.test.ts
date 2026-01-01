@@ -117,12 +117,7 @@ describe("Teleport Routes", () => {
     });
 
     it("should allow access with valid x-api-token", async () => {
-      mockGet.mockResolvedValue(mockTeleport);
-
-      const response = await request(app)
-        .get("/api/teleport")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/teleport");
 
       expect([200, 201]).toContain(response.status);
     });
@@ -226,15 +221,7 @@ describe("Teleport Routes", () => {
       });
 
       it("should return 404 when external account is not found", async () => {
-        mockCreate.mockRejectedValue(
-          new CustomError(404, "External account not found")
-        );
-
-        const response = await request(app)
-          .post("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
 
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
@@ -246,12 +233,7 @@ describe("Teleport Routes", () => {
           new CustomError(400, "External account not registered with Zynk")
         );
 
-        const response = await request(app)
-          .post("/api/teleport")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validCreatePayload);
-
+        const response = await authRequest("post", "/api/teleport", validCreatePayload);
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toContain("not registered with Zynk");

@@ -1,33 +1,43 @@
-import { jest, describe, it, expect, beforeEach, beforeAll } from "@jest/globals";
+import {
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
+import CustomError from "../lib/Error";
 import {
-  mockUser,
-  mockUserWithZynkEntity,
-  mockUserWithFundingAccount,
-  mockCreatedEntityResponse,
-  mockKycData,
-  mockKycStatus,
-  mockFundingAccount,
-  mockCreateFundingAccountResponse,
-  mockActivatedFundingAccount,
-  mockDeactivatedFundingAccount,
   ADMIN_TOKEN,
   AUTH_TOKEN,
+  mockActivatedFundingAccount,
+  mockCreatedEntityResponse,
+  mockCreateFundingAccountResponse,
+  mockDeactivatedFundingAccount,
+  mockFundingAccount,
+  mockKycData,
+  mockKycStatus,
+  mockUser,
 } from "./fixtures/zynk.fixtures";
-import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockCreateEntity = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockStartKyc = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetKycStatus = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockCreateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockActivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockDeactivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockCreateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockActivateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockDeactivateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // Use unstable_mockModule for ESM compatibility
 jest.unstable_mockModule("@clerk/express", () => ({
@@ -183,7 +193,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockCreateEntity.mockRejectedValue(new CustomError(404, "User not found"));
+      mockCreateEntity.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .post("/api/zynk/entities")
@@ -197,7 +209,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no address", async () => {
       mockCreateEntity.mockRejectedValue(
-        new CustomError(400, "User must have an address to create a Zynk entity")
+        new CustomError(
+          400,
+          "User must have an address to create a Zynk entity"
+        )
       );
 
       const response = await request(app)
@@ -284,7 +299,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockStartKyc.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -328,7 +346,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockGetKycStatus.mockRejectedValue(new CustomError(404, "User not found"));
+      mockGetKycStatus.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .get("/api/zynk/kyc/status")
@@ -341,7 +361,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockGetKycStatus.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -360,7 +383,9 @@ describe("Zynk Routes", () => {
   // ===========================================
   describe("POST /api/zynk/funding-account", () => {
     it("should return 201 on successful funding account creation", async () => {
-      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
+      mockCreateFundingAccount.mockResolvedValue(
+        mockCreateFundingAccountResponse
+      );
 
       const response = await request(app)
         .post("/api/zynk/funding-account")
@@ -369,12 +394,16 @@ describe("Zynk Routes", () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Funding account created successfully");
+      expect(response.body.message).toBe(
+        "Funding account created successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
     it("should call createFundingAccount with correct user ID", async () => {
-      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
+      mockCreateFundingAccount.mockResolvedValue(
+        mockCreateFundingAccountResponse
+      );
 
       await request(app)
         .post("/api/zynk/funding-account")
@@ -385,7 +414,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockCreateFundingAccount.mockRejectedValue(new CustomError(404, "User not found"));
+      mockCreateFundingAccount.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .post("/api/zynk/funding-account")
@@ -398,7 +429,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockCreateFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -441,7 +475,9 @@ describe("Zynk Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Funding account retrieved successfully");
+      expect(response.body.message).toBe(
+        "Funding account retrieved successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
@@ -457,7 +493,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockGetFundingAccount.mockRejectedValue(new CustomError(404, "User not found"));
+      mockGetFundingAccount.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .get("/api/zynk/funding-account")
@@ -470,7 +508,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockGetFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -485,7 +526,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no funding account", async () => {
       mockGetFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a funding account. Create funding account first.")
+        new CustomError(
+          400,
+          "User does not have a funding account. Create funding account first."
+        )
       );
 
       const response = await request(app)
@@ -513,7 +557,9 @@ describe("Zynk Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Funding account activated successfully");
+      expect(response.body.message).toBe(
+        "Funding account activated successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
@@ -529,7 +575,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockActivateFundingAccount.mockRejectedValue(new CustomError(404, "User not found"));
+      mockActivateFundingAccount.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .post("/api/zynk/funding-account/activate")
@@ -542,7 +590,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockActivateFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -557,7 +608,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no funding account", async () => {
       mockActivateFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a funding account. Create funding account first.")
+        new CustomError(
+          400,
+          "User does not have a funding account. Create funding account first."
+        )
       );
 
       const response = await request(app)
@@ -576,7 +630,9 @@ describe("Zynk Routes", () => {
   // ===========================================
   describe("POST /api/zynk/funding-account/deactivate", () => {
     it("should return 200 on successful deactivation", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
+      mockDeactivateFundingAccount.mockResolvedValue(
+        mockDeactivatedFundingAccount
+      );
 
       const response = await request(app)
         .post("/api/zynk/funding-account/deactivate")
@@ -585,12 +641,16 @@ describe("Zynk Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Funding account deactivated successfully");
+      expect(response.body.message).toBe(
+        "Funding account deactivated successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
     it("should call deactivateFundingAccount with correct user ID", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
+      mockDeactivateFundingAccount.mockResolvedValue(
+        mockDeactivatedFundingAccount
+      );
 
       await request(app)
         .post("/api/zynk/funding-account/deactivate")
@@ -601,7 +661,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockDeactivateFundingAccount.mockRejectedValue(new CustomError(404, "User not found"));
+      mockDeactivateFundingAccount.mockRejectedValue(
+        new CustomError(404, "User not found")
+      );
 
       const response = await request(app)
         .post("/api/zynk/funding-account/deactivate")
@@ -614,7 +676,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no Zynk entity", async () => {
       mockDeactivateFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
+        new CustomError(
+          400,
+          "User does not have a Zynk entity. Create entity first."
+        )
       );
 
       const response = await request(app)
@@ -629,7 +694,10 @@ describe("Zynk Routes", () => {
 
     it("should return 400 when user has no funding account", async () => {
       mockDeactivateFundingAccount.mockRejectedValue(
-        new CustomError(400, "User does not have a funding account. Create funding account first.")
+        new CustomError(
+          400,
+          "User does not have a funding account. Create funding account first."
+        )
       );
 
       const response = await request(app)
@@ -681,7 +749,9 @@ describe("Zynk Routes", () => {
     });
 
     it("should return error response for internal server errors", async () => {
-      mockCreateEntity.mockRejectedValue(new Error("Database connection failed"));
+      mockCreateEntity.mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
       const response = await request(app)
         .post("/api/zynk/entities")
