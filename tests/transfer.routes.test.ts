@@ -23,13 +23,18 @@ import {
 } from "./fixtures/transfer.fixtures";
 import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
+import {
+  createAdminMiddlewareTests,
+  createAuthMiddlewareTests,
+  createResponseFormatTests,
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockSimulateTransfer =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockSimulateTransfer = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockTransfer = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // Use unstable_mockModule for ESM compatibility
@@ -76,85 +81,41 @@ describe("Transfer Routes", () => {
     mockGetByClerkUserId.mockResolvedValue(mockUser);
   });
 
+  // Helper to create authenticated request
+  function authRequest(method: "post", endpoint: string) {
+    return request(app)
+      [method](endpoint)
+      .set("x-api-token", ADMIN_TOKEN)
+      .set("x-auth-token", AUTH_TOKEN);
+  }
+
   // ===========================================
-  // Admin Middleware Tests
+  // Admin Middleware Tests (using shared helper)
   // ===========================================
-  describe("Admin Middleware", () => {
-    it("should return 403 when x-api-token header is missing", async () => {
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("Access denied");
-    });
-
-    it("should return 403 when x-api-token is invalid", async () => {
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", "invalid-token")
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should allow access with valid x-api-token", async () => {
-      mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect([200, 201]).toContain(response.status);
-    });
+  createAdminMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/transfer/simulate",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockSimulateTransfer.mockResolvedValue(mockSimulateResponse),
+    payload: validSimulatePayload,
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ===========================================
-  // Auth Middleware Tests
+  // Auth Middleware Tests (using shared helper)
   // ===========================================
-  describe("Auth Middleware", () => {
-    it("should return 401 when x-auth-token header is missing", async () => {
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain("token");
-    });
-
-    it("should return 401 when token verification fails", async () => {
-      mockVerifyToken.mockRejectedValue(new Error("Invalid token"));
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", "invalid-token")
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 401 when user not found for clerk user id", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
+  createAuthMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/transfer/simulate",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    payload: validSimulatePayload,
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ==========================================
@@ -162,164 +123,40 @@ describe("Transfer Routes", () => {
   // ==========================================
   describe("POST /api/transfer/simulate", () => {
     describe("Validation", () => {
-      it("should return 400 when externalAccountId is missing", async () => {
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloads.missingId);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "External account ID is required"
-        );
-      });
-
-      it("should return 400 when externalAccountId is not a valid UUID", async () => {
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloads.invalidUuid);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("valid UUID");
-      });
-
-      it("should return 400 when neither exactAmountIn nor exactAmountOut is provided", async () => {
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloads.missingAmount);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "exactAmountIn or exactAmountOut"
-        );
-      });
-
-      it("should return 400 when exactAmountIn is negative", async () => {
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidSimulatePayloads.negativeAmount);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("positive");
-      });
-
-      it("should return 400 when depositMemo exceeds max length", async () => {
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({
-            ...validSimulatePayload,
-            depositMemo: "a".repeat(256),
-          });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("cannot exceed 255 characters");
+      it.each([
+        { payload: invalidSimulatePayloads.missingId, message: "External account ID is required", desc: "externalAccountId is missing" },
+        { payload: invalidSimulatePayloads.invalidUuid, message: "valid UUID", desc: "externalAccountId is not a valid UUID" },
+        { payload: invalidSimulatePayloads.missingAmount, message: "exactAmountIn or exactAmountOut", desc: "neither exactAmountIn nor exactAmountOut is provided" },
+        { payload: invalidSimulatePayloads.negativeAmount, message: "positive", desc: "exactAmountIn is negative" },
+        { payload: { ...validSimulatePayload, depositMemo: "a".repeat(256) }, message: "cannot exceed 255 characters", desc: "depositMemo exceeds max length" },
+      ])("should return 400 when $desc", async ({ payload, message }) => {
+        const response = await authRequest("post", "/api/transfer/simulate").send(payload);
+        expectErrorResponse(response, 400, message);
       });
     });
 
     describe("Business Logic", () => {
-      it("should return 400 when user has not completed KYC", async () => {
-        mockGetByClerkUserId.mockResolvedValue(mockUserWithoutZynkEntity);
-        mockSimulateTransfer.mockRejectedValue(
-          new CustomError(400, "User must complete KYC before making transfers")
-        );
+      it.each([
+        { error: new CustomError(400, "User must complete KYC before making transfers"), message: "KYC", mockUser: mockUserWithoutZynkEntity, desc: "user has not completed KYC" },
+        { error: new CustomError(400, "User does not have a wallet. Please create a wallet first."), message: "wallet", mockUser: mockUser, desc: "user does not have a wallet" },
+        { error: new CustomError(404, "Destination external account not found"), message: "Destination external account not found", mockUser: mockUser, desc: "destination account is not found" },
+        { error: new CustomError(400, "Destination account must be a withdrawal type external account"), message: "withdrawal type", mockUser: mockUser, desc: "destination is not withdrawal type" },
+      ])("should return appropriate error when $desc", async ({ error, message, mockUser: user }) => {
+        mockGetByClerkUserId.mockResolvedValue(user);
+        mockSimulateTransfer.mockRejectedValue(error);
 
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("KYC");
-      });
-
-      it("should return 400 when user does not have a wallet", async () => {
-        mockSimulateTransfer.mockRejectedValue(
-          new CustomError(
-            400,
-            "User does not have a wallet. Please create a wallet first."
-          )
-        );
-
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("wallet");
-      });
-
-      it("should return 404 when destination account is not found", async () => {
-        mockSimulateTransfer.mockRejectedValue(
-          new CustomError(404, "Destination external account not found")
-        );
-
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
-
-        expect(response.status).toBe(404);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "Destination external account not found"
-        );
-      });
-
-      it("should return 400 when destination is not withdrawal type", async () => {
-        mockSimulateTransfer.mockRejectedValue(
-          new CustomError(
-            400,
-            "Destination account must be a withdrawal type external account"
-          )
-        );
-
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("withdrawal type");
+        const response = await authRequest("post", "/api/transfer/simulate").send(validSimulatePayload);
+        expectErrorResponse(response, error.statusCode, message);
       });
 
       it("should return 200 with simulation result on success", async () => {
         mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
 
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
+        const response = await authRequest("post", "/api/transfer/simulate").send(validSimulatePayload);
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe("Transfer simulation successful");
+        expectSuccessResponse(response, 200, "Transfer simulation successful");
         expect(response.body.data).toBeDefined();
-        expect(response.body.data.executionId).toBe(
-          mockSimulateResponse.executionId
-        );
+        expect(response.body.data.executionId).toBe(mockSimulateResponse.executionId);
         expect(response.body.data.payloadToSign).toBeDefined();
         expect(response.body.data.quote).toBeDefined();
       });
@@ -327,24 +164,15 @@ describe("Transfer Routes", () => {
       it("should work with exactAmountOut instead of exactAmountIn", async () => {
         mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
 
-        const response = await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayloadWithAmountOut);
+        const response = await authRequest("post", "/api/transfer/simulate").send(validSimulatePayloadWithAmountOut);
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
+        expectSuccessResponse(response, 200);
       });
 
       it("should pass correct data to service", async () => {
         mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
 
-        await request(app)
-          .post("/api/transfer/simulate")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validSimulatePayload);
+        await authRequest("post", "/api/transfer/simulate").send(validSimulatePayload);
 
         expect(mockSimulateTransfer).toHaveBeenCalledWith(
           mockUser.id,
@@ -362,39 +190,13 @@ describe("Transfer Routes", () => {
   // ==========================================
   describe("POST /api/transfer/transfer", () => {
     describe("Validation", () => {
-      it("should return 400 when executionId is missing", async () => {
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloads.missingExecutionId);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Execution ID is required");
-      });
-
-      it("should return 400 when signature is missing", async () => {
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloads.missingSignature);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Signature is required");
-      });
-
-      it("should return 400 when body is empty", async () => {
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(invalidTransferPayloads.empty);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
+      it.each([
+        { payload: invalidTransferPayloads.missingExecutionId, message: "Execution ID is required", desc: "executionId is missing" },
+        { payload: invalidTransferPayloads.missingSignature, message: "Signature is required", desc: "signature is missing" },
+        { payload: invalidTransferPayloads.empty, message: undefined, desc: "body is empty" },
+      ])("should return 400 when $desc", async ({ payload, message }) => {
+        const response = await authRequest("post", "/api/transfer/transfer").send(payload);
+        expectErrorResponse(response, 400, message);
       });
     });
 
@@ -402,59 +204,27 @@ describe("Transfer Routes", () => {
       it("should return 200 with transfer result on success", async () => {
         mockTransfer.mockResolvedValue(mockTransferResponse);
 
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validTransferPayload);
+        const response = await authRequest("post", "/api/transfer/transfer").send(validTransferPayload);
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-        expect(response.body.message).toBe(mockTransferResponse.message);
+        expectSuccessResponse(response, 200, mockTransferResponse.message);
         expect(response.body.data).toBeDefined();
-        expect(response.body.data.executionId).toBe(
-          mockTransferResponse.executionId
-        );
+        expect(response.body.data.executionId).toBe(mockTransferResponse.executionId);
       });
 
-      it("should return 400 when execution ID is invalid", async () => {
-        mockTransfer.mockRejectedValue(
-          new CustomError(400, "Invalid execution ID")
-        );
+      it.each([
+        { error: new CustomError(400, "Invalid execution ID"), desc: "execution ID is invalid" },
+        { error: new CustomError(400, "Invalid signature"), desc: "signature is invalid" },
+      ])("should return 400 when $desc", async ({ error }) => {
+        mockTransfer.mockRejectedValue(error);
 
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validTransferPayload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-      });
-
-      it("should return 400 when signature is invalid", async () => {
-        mockTransfer.mockRejectedValue(
-          new CustomError(400, "Invalid signature")
-        );
-
-        const response = await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validTransferPayload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
+        const response = await authRequest("post", "/api/transfer/transfer").send(validTransferPayload);
+        expectErrorResponse(response, 400);
       });
 
       it("should pass correct data to service", async () => {
         mockTransfer.mockResolvedValue(mockTransferResponse);
 
-        await request(app)
-          .post("/api/transfer/transfer")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(validTransferPayload);
+        await authRequest("post", "/api/transfer/transfer").send(validTransferPayload);
 
         expect(mockTransfer).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -467,57 +237,17 @@ describe("Transfer Routes", () => {
   });
 
   // ===========================================
-  // Response Format Tests
+  // Response Format Tests (using shared helper)
   // ===========================================
-  describe("Response Format", () => {
-    it("should always return success boolean", async () => {
-      mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(typeof response.body.success).toBe("boolean");
-    });
-
-    it("should always return message string", async () => {
-      mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(typeof response.body.message).toBe("string");
-    });
-
-    it("should return JSON content type", async () => {
-      mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.headers["content-type"]).toMatch(/application\/json/);
-    });
-
-    it("should return error response for internal server errors", async () => {
-      mockSimulateTransfer.mockRejectedValue(new Error("Zynk API error"));
-
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validSimulatePayload);
-
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-    });
+  createResponseFormatTests({
+    getApp: () => app,
+    endpoint: "/api/transfer/simulate",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    payload: validSimulatePayload,
+    setupSuccessMock: () => mockSimulateTransfer.mockResolvedValue(mockSimulateResponse),
+    setupErrorMock: () => mockSimulateTransfer.mockRejectedValue(new Error("Zynk API error")),
   });
 
   // ==========================================
@@ -527,30 +257,21 @@ describe("Transfer Routes", () => {
     it("should handle both exactAmountIn and exactAmountOut in payload", async () => {
       mockSimulateTransfer.mockResolvedValue(mockSimulateResponse);
 
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({
-          ...validSimulatePayload,
-          exactAmountOut: 99.5, // Both provided
-        });
+      const response = await authRequest("post", "/api/transfer/simulate").send({
+        ...validSimulatePayload,
+        exactAmountOut: 99.5, // Both provided
+      });
 
-      expect(response.status).toBe(200);
+      expectSuccessResponse(response, 200);
     });
 
     it("should handle zero amount gracefully", async () => {
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({
-          ...validSimulatePayload,
-          exactAmountIn: 0,
-        });
+      const response = await authRequest("post", "/api/transfer/simulate").send({
+        ...validSimulatePayload,
+        exactAmountIn: 0,
+      });
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 400);
     });
 
     it("should handle optional depositMemo being omitted", async () => {
@@ -558,13 +279,9 @@ describe("Transfer Routes", () => {
 
       const { depositMemo, ...payloadWithoutMemo } = validSimulatePayload;
 
-      const response = await request(app)
-        .post("/api/transfer/simulate")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(payloadWithoutMemo);
+      const response = await authRequest("post", "/api/transfer/simulate").send(payloadWithoutMemo);
 
-      expect(response.status).toBe(200);
+      expectSuccessResponse(response, 200);
     });
   });
 });

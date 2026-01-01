@@ -7,7 +7,6 @@ import {
   beforeAll,
 } from "@jest/globals";
 import type { Express, Router } from "express";
-import type { Response } from "supertest";
 import request from "supertest";
 import {
   mockUser,
@@ -24,31 +23,13 @@ import {
 } from "./fixtures/external-accounts.fixtures";
 import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
-
-// Response assertion helpers to reduce duplication
-function expectErrorResponse(
-  response: Response,
-  statusCode: number,
-  messageContains?: string
-) {
-  expect(response.status).toBe(statusCode);
-  expect(response.body.success).toBe(false);
-  if (messageContains) {
-    expect(response.body.message).toContain(messageContains);
-  }
-}
-
-function expectSuccessResponse(
-  response: Response,
-  statusCode: number,
-  message?: string
-) {
-  expect(response.status).toBe(statusCode);
-  expect(response.body.success).toBe(true);
-  if (message) {
-    expect(response.body.message).toBe(message);
-  }
-}
+import {
+  createAdminMiddlewareTests,
+  createAuthMiddlewareTests,
+  createResponseFormatTests,
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -113,71 +94,30 @@ describe("External Accounts Routes", () => {
   }
 
   // ===========================================
-  // Admin Middleware Tests
+  // Admin Middleware Tests (using shared helper)
   // ===========================================
-  describe("Admin Middleware", () => {
-    it("should return 403 when x-api-token header is missing", async () => {
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expectErrorResponse(response, 403, "Access denied");
-    });
-
-    it("should return 403 when x-api-token is invalid", async () => {
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", "invalid-token")
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expectErrorResponse(response, 403);
-    });
-
-    it("should allow access with valid x-api-token", async () => {
-      mockList.mockResolvedValue(mockExternalAccountList);
-
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect([200, 201]).toContain(response.status);
-    });
+  createAdminMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/external-accounts",
+    method: "get",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockList.mockResolvedValue(mockExternalAccountList),
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ===========================================
-  // Auth Middleware Tests
+  // Auth Middleware Tests (using shared helper)
   // ===========================================
-  describe("Auth Middleware", () => {
-    it("should return 401 when x-auth-token header is missing", async () => {
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN);
-
-      expectErrorResponse(response, 401, "token");
-    });
-
-    it("should return 401 when token verification fails", async () => {
-      mockVerifyToken.mockRejectedValue(new Error("Invalid token"));
-
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", "invalid-token");
-
-      expectErrorResponse(response, 401);
-    });
-
-    it("should return 401 when user not found for clerk user id", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
-
-      const response = await request(app)
-        .get("/api/external-accounts")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expectErrorResponse(response, 401);
-    });
+  createAuthMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/external-accounts",
+    method: "get",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ==========================================
@@ -185,37 +125,14 @@ describe("External Accounts Routes", () => {
   // ==========================================
   describe("POST /api/external-accounts", () => {
     describe("Validation", () => {
-      it("should return 400 when walletAddress is missing", async () => {
-        const response = await authRequest("post", "/api/external-accounts").send(
-          invalidPayloads.missingAddress
-        );
-
-        expectErrorResponse(response, 400, "Wallet address is required");
-      });
-
-      it("should return 400 when walletAddress is empty", async () => {
-        const response = await authRequest("post", "/api/external-accounts").send(
-          invalidPayloads.emptyAddress
-        );
-
-        expectErrorResponse(response, 400);
-      });
-
-      it("should return 400 when walletAddress exceeds max length", async () => {
-        const response = await authRequest("post", "/api/external-accounts").send(
-          invalidPayloads.longAddress
-        );
-
-        expectErrorResponse(response, 400, "Wallet address cannot exceed 255 characters");
-      });
-
-      it("should return 400 when label exceeds max length", async () => {
-        const response = await authRequest("post", "/api/external-accounts").send({
-          walletAddress: "0x1234567890abcdef",
-          label: "a".repeat(101),
-        });
-
-        expectErrorResponse(response, 400, "Label cannot exceed 100 characters");
+      it.each([
+        { payload: invalidPayloads.missingAddress, message: "Wallet address is required", desc: "walletAddress is missing" },
+        { payload: invalidPayloads.emptyAddress, message: undefined, desc: "walletAddress is empty" },
+        { payload: invalidPayloads.longAddress, message: "Wallet address cannot exceed 255 characters", desc: "walletAddress exceeds max length" },
+        { payload: { walletAddress: "0x1234567890abcdef", label: "a".repeat(101) }, message: "Label cannot exceed 100 characters", desc: "label exceeds max length" },
+      ])("should return 400 when $desc", async ({ payload, message }) => {
+        const response = await authRequest("post", "/api/external-accounts").send(payload);
+        expectErrorResponse(response, 400, message);
       });
     });
 
@@ -223,46 +140,30 @@ describe("External Accounts Routes", () => {
       it("should return 400 when user does not have zynk entity", async () => {
         mockGetByClerkUserId.mockResolvedValue(mockUserWithoutZynkEntity);
         mockCreate.mockRejectedValue(
-          new CustomError(
-            400,
-            "User must have a Zynk entity to add external accounts"
-          )
+          new CustomError(400, "User must have a Zynk entity to add external accounts")
         );
 
-        const response = await authRequest("post", "/api/external-accounts").send(
-          validCreatePayload
-        );
-
+        const response = await authRequest("post", "/api/external-accounts").send(validCreatePayload);
         expectErrorResponse(response, 400, "Zynk entity");
       });
 
       it("should return 409 when external account already exists", async () => {
         mockCreate.mockRejectedValue(
-          new CustomError(
-            409,
-            "External account with this address already exists"
-          )
+          new CustomError(409, "External account with this address already exists")
         );
 
-        const response = await authRequest("post", "/api/external-accounts").send(
-          validCreatePayload
-        );
-
+        const response = await authRequest("post", "/api/external-accounts").send(validCreatePayload);
         expectErrorResponse(response, 409, "already exists");
       });
 
       it("should return 201 when external account is created successfully", async () => {
         mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-        const response = await authRequest("post", "/api/external-accounts").send(
-          validCreatePayload
-        );
+        const response = await authRequest("post", "/api/external-accounts").send(validCreatePayload);
 
         expectSuccessResponse(response, 201, "External account created successfully");
         expect(response.body.data).toBeDefined();
-        expect(response.body.data.walletAddress).toBe(
-          validCreatePayload.walletAddress
-        );
+        expect(response.body.data.walletAddress).toBe(validCreatePayload.walletAddress);
       });
 
       it("should pass correct data to service", async () => {
@@ -285,22 +186,16 @@ describe("External Accounts Routes", () => {
   // GET /api/external-accounts (List)
   // ==========================================
   describe("GET /api/external-accounts", () => {
-    it("should return 200 with list of external accounts", async () => {
-      mockList.mockResolvedValue(mockExternalAccountList);
+    it.each([
+      { mockValue: mockExternalAccountList, expectedLength: 2, desc: "list of external accounts" },
+      { mockValue: [], expectedLength: 0, desc: "empty array when no accounts exist" },
+    ])("should return 200 with $desc", async ({ mockValue, expectedLength }) => {
+      mockList.mockResolvedValue(mockValue);
 
       const response = await authRequest("get", "/api/external-accounts");
 
-      expectSuccessResponse(response, 200, "External accounts retrieved successfully");
-      expect(response.body.data).toHaveLength(2);
-    });
-
-    it("should return 200 with empty array when no accounts exist", async () => {
-      mockList.mockResolvedValue([]);
-
-      const response = await authRequest("get", "/api/external-accounts");
-
-      expectSuccessResponse(response, 200);
-      expect(response.body.data).toEqual([]);
+      expectSuccessResponse(response, 200, expectedLength > 0 ? "External accounts retrieved successfully" : undefined);
+      expect(response.body.data).toHaveLength(expectedLength);
     });
 
     it("should pass user id to service", async () => {
@@ -315,7 +210,6 @@ describe("External Accounts Routes", () => {
       mockList.mockRejectedValue(new CustomError(404, "User not found"));
 
       const response = await authRequest("get", "/api/external-accounts");
-
       expectErrorResponse(response, 404);
     });
   });
@@ -328,25 +222,15 @@ describe("External Accounts Routes", () => {
     { method: "delete" as const, name: "DELETE" },
   ])("$name /api/external-accounts/:id - Common Validation", ({ method }) => {
     it("should return 400 when id is not a valid UUID", async () => {
-      const response = await authRequest(
-        method,
-        "/api/external-accounts/invalid-uuid"
-      );
-
+      const response = await authRequest(method, "/api/external-accounts/invalid-uuid");
       expectErrorResponse(response, 400, "valid UUID");
     });
 
     it("should return 404 when external account is not found", async () => {
       const mockFn = method === "get" ? mockGetById : mockDelete;
-      mockFn.mockRejectedValue(
-        new CustomError(404, "External account not found")
-      );
+      mockFn.mockRejectedValue(new CustomError(404, "External account not found"));
 
-      const response = await authRequest(
-        method,
-        `/api/external-accounts/${NON_EXISTENT_UUID}`
-      );
-
+      const response = await authRequest(method, `/api/external-accounts/${NON_EXISTENT_UUID}`);
       expectErrorResponse(response, 404, "not found");
     });
 
@@ -367,10 +251,7 @@ describe("External Accounts Routes", () => {
     it("should return 200 with external account when found", async () => {
       mockGetById.mockResolvedValue(mockExternalAccount);
 
-      const response = await authRequest(
-        "get",
-        `/api/external-accounts/${VALID_UUID}`
-      );
+      const response = await authRequest("get", `/api/external-accounts/${VALID_UUID}`);
 
       expectSuccessResponse(response, 200, "External account retrieved successfully");
       expect(response.body.data).toBeDefined();
@@ -385,56 +266,29 @@ describe("External Accounts Routes", () => {
     it("should return 200 when external account is deleted successfully", async () => {
       mockDelete.mockResolvedValue(null);
 
-      const response = await authRequest(
-        "delete",
-        `/api/external-accounts/${VALID_UUID}`
-      );
-
+      const response = await authRequest("delete", `/api/external-accounts/${VALID_UUID}`);
       expectSuccessResponse(response, 200, "External account deleted successfully");
     });
 
     it("should return 400 when user does not have zynk entity", async () => {
-      mockDelete.mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity")
-      );
+      mockDelete.mockRejectedValue(new CustomError(400, "User does not have a Zynk entity"));
 
-      const response = await authRequest(
-        "delete",
-        `/api/external-accounts/${VALID_UUID}`
-      );
-
+      const response = await authRequest("delete", `/api/external-accounts/${VALID_UUID}`);
       expectErrorResponse(response, 400, "Zynk entity");
     });
   });
 
   // ===========================================
-  // Response Format Tests
+  // Response Format Tests (using shared helper)
   // ===========================================
-  describe("Response Format", () => {
-    beforeEach(() => {
-      mockList.mockResolvedValue([]);
-    });
-
-    it("should always return success boolean and message string", async () => {
-      const response = await authRequest("get", "/api/external-accounts");
-
-      expect(typeof response.body.success).toBe("boolean");
-      expect(typeof response.body.message).toBe("string");
-    });
-
-    it("should return JSON content type", async () => {
-      const response = await authRequest("get", "/api/external-accounts");
-
-      expect(response.headers["content-type"]).toMatch(/application\/json/);
-    });
-
-    it("should return error response for internal server errors", async () => {
-      mockList.mockRejectedValue(new Error("Database connection failed"));
-
-      const response = await authRequest("get", "/api/external-accounts");
-
-      expectErrorResponse(response, 500);
-    });
+  createResponseFormatTests({
+    getApp: () => app,
+    endpoint: "/api/external-accounts",
+    method: "get",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockList.mockResolvedValue([]),
+    setupErrorMock: () => mockList.mockRejectedValue(new Error("Database connection failed")),
   });
 
   // ==========================================
@@ -442,34 +296,17 @@ describe("External Accounts Routes", () => {
   // ==========================================
   describe("Edge Cases", () => {
     it.each([
-      {
-        desc: "special characters in wallet address",
-        payload: {
-          walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
-          label: "Mixed Case Wallet",
-        },
-      },
-      {
-        desc: "optional fields being undefined",
-        payload: {
-          walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
-        },
-      },
+      { desc: "special characters in wallet address", payload: { walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12", label: "Mixed Case Wallet" } },
+      { desc: "optional fields being undefined", payload: { walletAddress: "0x1234567890abcdef1234567890abcdef12345678" } },
     ])("should handle $desc", async ({ payload }) => {
       mockCreate.mockResolvedValue(mockCreatedExternalAccount);
 
-      const response = await authRequest("post", "/api/external-accounts").send(
-        payload
-      );
-
+      const response = await authRequest("post", "/api/external-accounts").send(payload);
       expect(response.status).toBe(201);
     });
 
     it("should handle empty body gracefully", async () => {
-      const response = await authRequest("post", "/api/external-accounts").send(
-        {}
-      );
-
+      const response = await authRequest("post", "/api/external-accounts").send({});
       expectErrorResponse(response, 400);
     });
   });

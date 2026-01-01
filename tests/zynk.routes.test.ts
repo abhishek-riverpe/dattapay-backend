@@ -7,7 +7,6 @@ import {
   jest,
 } from "@jest/globals";
 import type { Express, Router } from "express";
-import type { Response } from "supertest";
 import request from "supertest";
 import CustomError from "../lib/Error";
 import {
@@ -23,47 +22,24 @@ import {
   mockUser,
 } from "./fixtures/zynk.fixtures";
 import type { TestAppConfig } from "./helpers";
-
-// Response assertion helpers to reduce duplication
-function expectErrorResponse(
-  response: Response,
-  statusCode: number,
-  messageContains?: string
-) {
-  expect(response.status).toBe(statusCode);
-  expect(response.body.success).toBe(false);
-  if (messageContains) {
-    expect(response.body.message).toContain(messageContains);
-  }
-}
-
-function expectSuccessResponse(
-  response: Response,
-  statusCode: number,
-  message?: string
-) {
-  expect(response.status).toBe(statusCode);
-  expect(response.body.success).toBe(true);
-  if (message) {
-    expect(response.body.message).toBe(message);
-  }
-}
+import {
+  createAdminMiddlewareTests,
+  createAuthMiddlewareTests,
+  createResponseFormatTests,
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockCreateEntity = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockStartKyc = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetKycStatus = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockCreateFundingAccount =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetFundingAccount =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockActivateFundingAccount =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockDeactivateFundingAccount =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockCreateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockActivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockDeactivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // Use unstable_mockModule for ESM compatibility
 jest.unstable_mockModule("@clerk/express", () => ({
@@ -123,65 +99,30 @@ describe("Zynk Routes", () => {
   }
 
   // ===========================================
-  // Admin Middleware Tests
+  // Admin Middleware Tests (using shared helper)
   // ===========================================
-  describe("Admin Middleware", () => {
-    it("should return 403 when x-api-token header is missing", async () => {
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expectErrorResponse(response, 403, "Access denied");
-    });
-
-    it("should return 403 when x-api-token is invalid", async () => {
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", "invalid-token")
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expectErrorResponse(response, 403);
-    });
-
-    it("should allow access with valid x-api-token", async () => {
-      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
-
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expect([200, 201]).toContain(response.status);
-    });
+  createAdminMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/zynk/entities",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ===========================================
-  // Auth Middleware Tests
+  // Auth Middleware Tests (using shared helper)
   // ===========================================
-  describe("Auth Middleware", () => {
-    it("should return 401 when x-auth-token header is missing", async () => {
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN);
-
-      expectErrorResponse(response, 401, "token");
-    });
-
-    it("should return 401 when token verification fails", async () => {
-      mockVerifyToken.mockRejectedValue(new Error("Invalid token"));
-
-      const response = await request(app)
-        .post("/api/zynk/entities")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", "invalid-token");
-
-      expectErrorResponse(response, 401);
-    });
-
-    it("should return 401 when user not found for clerk user id", async () => {
-      mockGetByClerkUserId.mockRejectedValue(new Error("User not found"));
-
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expectErrorResponse(response, 401);
-    });
+  createAuthMiddlewareTests({
+    getApp: () => app,
+    endpoint: "/api/zynk/entities",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    mockVerifyToken: mockVerifyToken as jest.Mock,
+    mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
 
   // ===========================================
@@ -200,7 +141,6 @@ describe("Zynk Routes", () => {
       mockFn().mockRejectedValue(new CustomError(404, "User not found"));
 
       const response = await authRequest(method, endpoint);
-
       expectErrorResponse(response, 404, "not found");
     });
   });
@@ -219,7 +159,6 @@ describe("Zynk Routes", () => {
       );
 
       const response = await authRequest(method, endpoint);
-
       expectErrorResponse(response, 400, "Zynk entity");
     });
   });
@@ -235,7 +174,6 @@ describe("Zynk Routes", () => {
       );
 
       const response = await authRequest(method, endpoint);
-
       expectErrorResponse(response, 400, "funding account");
     });
   });
@@ -257,38 +195,18 @@ describe("Zynk Routes", () => {
       mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
 
       await authRequest("post", "/api/zynk/entities");
-
       expect(mockCreateEntity).toHaveBeenCalledWith(mockUser.id);
     });
 
-    it("should return 400 when user has no address", async () => {
-      mockCreateEntity.mockRejectedValue(
-        new CustomError(400, "User must have an address to create a Zynk entity")
-      );
+    it.each([
+      { error: new CustomError(400, "User must have an address to create a Zynk entity"), message: "address", desc: "user has no address" },
+      { error: new CustomError(400, "User does not have a public key"), message: "public key", desc: "user has no public key" },
+      { error: new CustomError(409, "User already has a Zynk entity"), message: "already has", desc: "user already has a Zynk entity" },
+    ])("should return appropriate error when $desc", async ({ error, message }) => {
+      mockCreateEntity.mockRejectedValue(error);
 
       const response = await authRequest("post", "/api/zynk/entities");
-
-      expectErrorResponse(response, 400, "address");
-    });
-
-    it("should return 400 when user has no public key", async () => {
-      mockCreateEntity.mockRejectedValue(
-        new CustomError(400, "User does not have a public key")
-      );
-
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expectErrorResponse(response, 400, "public key");
-    });
-
-    it("should return 409 when user already has a Zynk entity", async () => {
-      mockCreateEntity.mockRejectedValue(
-        new CustomError(409, "User already has a Zynk entity")
-      );
-
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expectErrorResponse(response, 409, "already has");
+      expectErrorResponse(response, error.statusCode, message);
     });
   });
 
@@ -309,7 +227,6 @@ describe("Zynk Routes", () => {
       mockStartKyc.mockResolvedValue(mockKycData);
 
       await authRequest("post", "/api/zynk/kyc");
-
       expect(mockStartKyc).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -331,7 +248,6 @@ describe("Zynk Routes", () => {
       mockGetKycStatus.mockResolvedValue(mockKycStatus);
 
       await authRequest("get", "/api/zynk/kyc/status");
-
       expect(mockGetKycStatus).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -353,7 +269,6 @@ describe("Zynk Routes", () => {
       mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
 
       await authRequest("post", "/api/zynk/funding-account");
-
       expect(mockCreateFundingAccount).toHaveBeenCalledWith(mockUser.id);
     });
 
@@ -363,7 +278,6 @@ describe("Zynk Routes", () => {
       );
 
       const response = await authRequest("post", "/api/zynk/funding-account");
-
       expectErrorResponse(response, 409, "already has");
     });
   });
@@ -385,7 +299,6 @@ describe("Zynk Routes", () => {
       mockGetFundingAccount.mockResolvedValue(mockFundingAccount);
 
       await authRequest("get", "/api/zynk/funding-account");
-
       expect(mockGetFundingAccount).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -407,7 +320,6 @@ describe("Zynk Routes", () => {
       mockActivateFundingAccount.mockResolvedValue(mockActivatedFundingAccount);
 
       await authRequest("post", "/api/zynk/funding-account/activate");
-
       expect(mockActivateFundingAccount).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -429,38 +341,20 @@ describe("Zynk Routes", () => {
       mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
 
       await authRequest("post", "/api/zynk/funding-account/deactivate");
-
       expect(mockDeactivateFundingAccount).toHaveBeenCalledWith(mockUser.id);
     });
   });
 
   // ===========================================
-  // Response Format Tests
+  // Response Format Tests (using shared helper)
   // ===========================================
-  describe("Response Format", () => {
-    beforeEach(() => {
-      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse);
-    });
-
-    it("should always return success boolean and message string", async () => {
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expect(typeof response.body.success).toBe("boolean");
-      expect(typeof response.body.message).toBe("string");
-    });
-
-    it("should return JSON content type", async () => {
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expect(response.headers["content-type"]).toMatch(/application\/json/);
-    });
-
-    it("should return error response for internal server errors", async () => {
-      mockCreateEntity.mockRejectedValue(new Error("Database connection failed"));
-
-      const response = await authRequest("post", "/api/zynk/entities");
-
-      expectErrorResponse(response, 500);
-    });
+  createResponseFormatTests({
+    getApp: () => app,
+    endpoint: "/api/zynk/entities",
+    method: "post",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
+    setupErrorMock: () => mockCreateEntity.mockRejectedValue(new Error("Database connection failed")),
   });
 });

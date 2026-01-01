@@ -11,6 +11,11 @@ import {
 } from "./fixtures/user.fixtures";
 import CustomError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
+import {
+  createResponseFormatTests,
+  expectErrorResponse,
+  expectSuccessResponse,
+} from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -74,26 +79,24 @@ describe("User Routes", () => {
     mockCheckEmailExists.mockResolvedValue(false);
   });
 
+  // Helper to create authenticated request
+  function authRequest(method: "get" | "post" | "put" | "delete", endpoint: string) {
+    return request(app)
+      [method](endpoint)
+      .set("x-api-token", ADMIN_TOKEN)
+      .set("x-auth-token", AUTH_TOKEN);
+  }
+
   // ============================================================
   // Admin Middleware Tests
   // ============================================================
   describe("Admin Middleware", () => {
-    it("should return 403 when x-api-token header is missing", async () => {
-      const response = await request(app).get("/api/users/me");
-
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. No token provided.");
-    });
-
-    it("should return 403 when x-api-token is invalid", async () => {
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", "invalid-token");
-
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Invalid or expired token.");
+    it.each([
+      { desc: "x-api-token header is missing", setup: () => request(app).get("/api/users/me"), expectedMessage: "Access denied. No token provided." },
+      { desc: "x-api-token is invalid", setup: () => request(app).get("/api/users/me").set("x-api-token", "invalid-token"), expectedMessage: "Invalid or expired token." },
+    ])("should return 403 when $desc", async ({ setup, expectedMessage }) => {
+      const response = await setup();
+      expectErrorResponse(response, 403, expectedMessage);
     });
   });
 
@@ -101,14 +104,11 @@ describe("User Routes", () => {
   // GET /api/users/me - Get Current User
   // ============================================================
   describe("GET /api/users/me", () => {
-    it("should return 401 when x-auth-token is missing", async () => {
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. No token provided.");
+    it.each([
+      { desc: "x-auth-token is missing", setup: () => request(app).get("/api/users/me").set("x-api-token", ADMIN_TOKEN), expectedMessage: "Access denied. No token provided." },
+    ])("should return 401 when $desc", async ({ setup, expectedMessage }) => {
+      const response = await setup();
+      expectErrorResponse(response, 401, expectedMessage);
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
@@ -119,35 +119,22 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", "invalid-token");
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
 
     it("should return 404 when user is not found by clerk ID", async () => {
-      mockGetByClerkUserId.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
+      mockGetByClerkUserId.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      const response = await authRequest("get", "/api/users/me");
+      expectErrorResponse(response, 401);
     });
 
     it("should return 200 and user data on success", async () => {
       mockGetById.mockResolvedValue(mockUserWithAddress);
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/me");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("User retrieved successfully");
+      expectSuccessResponse(response, 200, "User retrieved successfully");
       expect(response.body.data).toBeDefined();
       expect(mockGetById).toHaveBeenCalledWith(mockUser.id);
     });
@@ -155,28 +142,18 @@ describe("User Routes", () => {
     it("should return user with address relationship", async () => {
       mockGetById.mockResolvedValue(mockUserWithAddress);
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/me");
 
-      expect(response.status).toBe(200);
+      expectSuccessResponse(response, 200);
       expect(response.body.data.address).toBeDefined();
     });
 
     it("should return 404 when getById service throws not found error", async () => {
-      mockGetById.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
+      mockGetById.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/me");
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User not found");
+      expectErrorResponse(response, 404, "User not found");
     });
   });
 
@@ -184,65 +161,36 @@ describe("User Routes", () => {
   // GET /api/users/email - Get User by Email
   // ============================================================
   describe("GET /api/users/email", () => {
-    it("should return 401 when x-auth-token is missing", async () => {
-      const response = await request(app)
-        .get("/api/users/email")
-        .set("x-api-token", ADMIN_TOKEN);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. No token provided.");
-    });
-
-    it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
-
-      const response = await request(app)
-        .get("/api/users/email")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", "invalid-token");
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+    it.each([
+      { desc: "x-auth-token is missing", setup: () => request(app).get("/api/users/email").set("x-api-token", ADMIN_TOKEN) },
+      { desc: "x-auth-token is invalid", setup: () => { mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token")); return request(app).get("/api/users/email").set("x-api-token", ADMIN_TOKEN).set("x-auth-token", "invalid-token"); } },
+    ])("should return 401 when $desc", async ({ setup }) => {
+      const response = await setup();
+      expectErrorResponse(response, 401);
     });
 
     it("should return 200 and user data on success", async () => {
       mockGetByEmail.mockResolvedValue(mockUserWithAddress);
 
-      const response = await request(app)
-        .get("/api/users/email")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/email");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("User retrieved successfully");
+      expectSuccessResponse(response, 200, "User retrieved successfully");
       expect(response.body.data).toBeDefined();
       expect(mockGetByEmail).toHaveBeenCalledWith(mockUser.email);
     });
 
     it("should return 404 when user is not found by email", async () => {
-      mockGetByEmail.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
+      mockGetByEmail.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await request(app)
-        .get("/api/users/email")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/email");
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User not found");
+      expectErrorResponse(response, 404, "User not found");
     });
 
     it("should use authenticated user email for lookup", async () => {
       mockGetByEmail.mockResolvedValue(mockUserWithAddress);
 
-      await request(app)
-        .get("/api/users/email")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("get", "/api/users/email");
 
       expect(mockGetByEmail).toHaveBeenCalledWith(mockUser.email);
     });
@@ -265,9 +213,7 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("User created successfully");
+      expectSuccessResponse(response, 201, "User created successfully");
       expect(response.body.data).toBeDefined();
     });
 
@@ -279,234 +225,84 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      expect(mockCheckEmailExists).toHaveBeenCalledWith(
-        validCreateUserPayload.email
-      );
+      expect(mockCheckEmailExists).toHaveBeenCalledWith(validCreateUserPayload.email);
     });
 
-    it("should return 409 when email exists in Zynk system", async () => {
-      mockCheckEmailExists.mockResolvedValue(true);
+    it.each([
+      { mockValue: true, status: 409, message: "Please use a different email address for now.", desc: "email exists in Zynk system" },
+    ])("should return $status when $desc", async ({ mockValue, status, message }) => {
+      mockCheckEmailExists.mockResolvedValue(mockValue);
 
       const response = await request(app)
         .post("/api/users")
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      expect(response.status).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe(
-        "Please use a different email address for now."
-      );
+      expectErrorResponse(response, status, message);
     });
 
     it("should return 409 when email already exists in database", async () => {
-      mockCreate.mockRejectedValue(
-        new CustomError(409, "User with this email already exists")
-      );
+      mockCreate.mockRejectedValue(new CustomError(409, "User with this email already exists"));
 
       const response = await request(app)
         .post("/api/users")
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      expect(response.status).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User with this email already exists");
+      expectErrorResponse(response, 409, "User with this email already exists");
     });
 
     // Validation Tests
     describe("Validation", () => {
-      it("should return 400 when clerkUserId is missing", async () => {
+      const requiredFields = [
+        { field: "clerkUserId", message: "Clerk user ID is required" },
+        { field: "firstName", message: "First name is required" },
+        { field: "lastName", message: "Last name is required" },
+        { field: "email", message: "Email is required" },
+        { field: "publicKey", message: "Public key is required" },
+        { field: "phoneNumberPrefix", message: "Phone number prefix is required" },
+        { field: "phoneNumber", message: "Phone number is required" },
+        { field: "nationality", message: "Nationality is required" },
+        { field: "dateOfBirth", message: "Date of birth is required" },
+      ];
+
+      it.each(requiredFields)("should return 400 when $field is missing", async ({ field, message }) => {
         const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).clerkUserId;
+        delete (payload as Record<string, unknown>)[field];
 
         const response = await request(app)
           .post("/api/users")
           .set("x-api-token", ADMIN_TOKEN)
           .send(payload);
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Clerk user ID is required");
+        expectErrorResponse(response, 400, message);
       });
 
-      it("should return 400 when firstName is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).firstName;
+      it.each([
+        { field: "email", value: "invalid-email", message: "valid email address", desc: "email format is invalid" },
+        { field: "dateOfBirth", value: "invalid-date", message: undefined, desc: "dateOfBirth format is invalid" },
+        { field: "firstName", value: "a".repeat(101), message: "cannot exceed 100 characters", desc: "firstName exceeds max length" },
+        { field: "phoneNumberPrefix", value: "+12345", message: "cannot exceed 5 characters", desc: "phoneNumberPrefix exceeds max length" },
+      ])("should return 400 when $desc", async ({ field, value, message }) => {
+        const payload = { ...validCreateUserPayload, [field]: value };
 
         const response = await request(app)
           .post("/api/users")
           .set("x-api-token", ADMIN_TOKEN)
           .send(payload);
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("First name is required");
-      });
-
-      it("should return 400 when lastName is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).lastName;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Last name is required");
-      });
-
-      it("should return 400 when email is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).email;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Email is required");
-      });
-
-      it("should return 400 when email format is invalid", async () => {
-        const payload = { ...validCreateUserPayload, email: "invalid-email" };
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("valid email address");
-      });
-
-      it("should return 400 when publicKey is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).publicKey;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Public key is required");
-      });
-
-      it("should return 400 when phoneNumberPrefix is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).phoneNumberPrefix;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Phone number prefix is required");
-      });
-
-      it("should return 400 when phoneNumber is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).phoneNumber;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Phone number is required");
-      });
-
-      it("should return 400 when nationality is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).nationality;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Nationality is required");
-      });
-
-      it("should return 400 when dateOfBirth is missing", async () => {
-        const payload = { ...validCreateUserPayload };
-        delete (payload as Record<string, unknown>).dateOfBirth;
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("Date of birth is required");
-      });
-
-      it("should return 400 when dateOfBirth format is invalid", async () => {
-        const payload = { ...validCreateUserPayload, dateOfBirth: "invalid-date" };
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-      });
-
-      it("should return 400 when firstName exceeds max length", async () => {
-        const payload = { ...validCreateUserPayload, firstName: "a".repeat(101) };
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("cannot exceed 100 characters");
-      });
-
-      it("should return 400 when phoneNumberPrefix exceeds max length", async () => {
-        const payload = { ...validCreateUserPayload, phoneNumberPrefix: "+12345" };
-
-        const response = await request(app)
-          .post("/api/users")
-          .set("x-api-token", ADMIN_TOKEN)
-          .send(payload);
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("cannot exceed 5 characters");
+        expectErrorResponse(response, 400, message);
       });
 
       it("should return 400 with multiple validation errors", async () => {
-        const payload = {
-          firstName: "John",
-          // Missing most required fields
-        };
+        const payload = { firstName: "John" }; // Missing most required fields
 
         const response = await request(app)
           .post("/api/users")
           .set("x-api-token", ADMIN_TOKEN)
           .send(payload);
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        // Should contain multiple error messages
+        expectErrorResponse(response, 400);
         expect(response.body.message.split(",").length).toBeGreaterThan(1);
       });
 
@@ -516,8 +312,7 @@ describe("User Routes", () => {
           .set("x-api-token", ADMIN_TOKEN)
           .send({});
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
+        expectErrorResponse(response, 400);
       });
     });
 
@@ -529,7 +324,6 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      // Should not fail due to missing auth token
       expect(response.status).not.toBe(401);
     });
 
@@ -542,8 +336,6 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .send(payload);
 
-      // zynkRepository should not be called when email is missing
-      // (validation will fail first, but middleware should skip)
       expect(mockCheckEmailExists).not.toHaveBeenCalled();
     });
   });
@@ -552,15 +344,11 @@ describe("User Routes", () => {
   // PUT /api/users/update-user - Update User
   // ============================================================
   describe("PUT /api/users/update-user", () => {
-    it("should return 401 when x-auth-token is missing", async () => {
-      const response = await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .send(validUpdateUserPayload);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. No token provided.");
+    it.each([
+      { desc: "x-auth-token is missing", setup: () => request(app).put("/api/users/update-user").set("x-api-token", ADMIN_TOKEN).send(validUpdateUserPayload) },
+    ])("should return 401 when $desc", async ({ setup }) => {
+      const response = await setup();
+      expectErrorResponse(response, 401, "Access denied. No token provided.");
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
@@ -572,206 +360,63 @@ describe("User Routes", () => {
         .set("x-auth-token", "invalid-token")
         .send(validUpdateUserPayload);
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
 
     it("should return 200 and updated user on success", async () => {
       const updatedUser = { ...mockUserWithAddress, ...validUpdateUserPayload };
       mockUpdate.mockResolvedValue(updatedUser);
 
-      const response = await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validUpdateUserPayload);
+      const response = await authRequest("put", "/api/users/update-user").send(validUpdateUserPayload);
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("User updated successfully");
+      expectSuccessResponse(response, 200, "User updated successfully");
       expect(response.body.data).toBeDefined();
     });
 
     it("should use authenticated user ID for update", async () => {
       mockUpdate.mockResolvedValue(mockUserWithAddress);
 
-      await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validUpdateUserPayload);
+      await authRequest("put", "/api/users/update-user").send(validUpdateUserPayload);
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        mockUser.id,
-        validUpdateUserPayload
-      );
+      expect(mockUpdate).toHaveBeenCalledWith(mockUser.id, validUpdateUserPayload);
     });
 
-    it("should return 404 when user is not found", async () => {
-      mockUpdate.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
+    it.each([
+      { error: new CustomError(404, "User not found"), status: 404, message: "User not found", desc: "user is not found" },
+      { error: new CustomError(409, "User with this email already exists"), status: 409, message: "User with this email already exists", desc: "trying to update to existing email" },
+    ])("should return $status when $desc", async ({ error, status, message }) => {
+      mockUpdate.mockRejectedValue(error);
 
-      const response = await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validUpdateUserPayload);
+      const response = await authRequest("put", "/api/users/update-user").send(validUpdateUserPayload);
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User not found");
-    });
-
-    it("should return 409 when trying to update to existing email", async () => {
-      mockUpdate.mockRejectedValue(
-        new CustomError(409, "User with this email already exists")
-      );
-
-      const response = await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send({ email: "existing@example.com" });
-
-      expect(response.status).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User with this email already exists");
+      expectErrorResponse(response, status, message);
     });
 
     // Validation Tests
     describe("Validation", () => {
-      it("should return 400 when body is empty", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({});
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain(
-          "At least one field is required to update"
-        );
+      it.each([
+        { payload: {}, message: "At least one field is required to update", desc: "body is empty" },
+        { payload: { firstName: "" }, message: "First name cannot be empty", desc: "firstName is empty string" },
+        { payload: { email: "invalid-email" }, message: "valid email address", desc: "email format is invalid" },
+        { payload: { firstName: "a".repeat(101) }, message: "cannot exceed 100 characters", desc: "firstName exceeds max length" },
+        { payload: { zynkEntityId: "short" }, message: "at least 30 characters", desc: "zynkEntityId is too short" },
+        { payload: { dateOfBirth: "invalid-date" }, message: undefined, desc: "dateOfBirth format is invalid" },
+      ])("should return 400 when $desc", async ({ payload, message }) => {
+        const response = await authRequest("put", "/api/users/update-user").send(payload);
+        expectErrorResponse(response, 400, message);
       });
 
-      it("should return 400 when firstName is empty string", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ firstName: "" });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("First name cannot be empty");
-      });
-
-      it("should return 400 when email format is invalid", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ email: "invalid-email" });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("valid email address");
-      });
-
-      it("should return 400 when firstName exceeds max length", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ firstName: "a".repeat(101) });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("cannot exceed 100 characters");
-      });
-
-      it("should return 400 when zynkEntityId is too short", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ zynkEntityId: "short" });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain("at least 30 characters");
-      });
-
-      it("should return 400 when dateOfBirth format is invalid", async () => {
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ dateOfBirth: "invalid-date" });
-
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-      });
-
-      it("should allow partial updates with single field", async () => {
+      it.each([
+        { payload: { firstName: "UpdatedName" }, desc: "single field" },
+        { payload: { firstName: "Updated", lastName: "Name", phoneNumber: "9999999999" }, desc: "multiple fields at once" },
+        { payload: { email: "newemail@example.com" }, desc: "email to valid format" },
+        { payload: { zynkEntityId: "a".repeat(35) }, desc: "valid zynkEntityId" },
+      ])("should allow partial updates with $desc", async ({ payload }) => {
         mockUpdate.mockResolvedValue(mockUserWithAddress);
 
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ firstName: "UpdatedName" });
+        const response = await authRequest("put", "/api/users/update-user").send(payload);
 
-        expect(response.status).toBe(200);
-        expect(mockUpdate).toHaveBeenCalledWith(mockUser.id, {
-          firstName: "UpdatedName",
-        });
-      });
-
-      it("should allow updating multiple fields at once", async () => {
-        mockUpdate.mockResolvedValue(mockUserWithAddress);
-
-        const updateData = {
-          firstName: "Updated",
-          lastName: "Name",
-          phoneNumber: "9999999999",
-        };
-
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send(updateData);
-
-        expect(response.status).toBe(200);
-        expect(mockUpdate).toHaveBeenCalledWith(mockUser.id, updateData);
-      });
-
-      it("should allow updating email to valid format", async () => {
-        mockUpdate.mockResolvedValue(mockUserWithAddress);
-
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ email: "newemail@example.com" });
-
-        expect(response.status).toBe(200);
-      });
-
-      it("should allow updating valid zynkEntityId", async () => {
-        mockUpdate.mockResolvedValue(mockUserWithAddress);
-
-        const validZynkId = "a".repeat(35); // Between 30-50 chars
-
-        const response = await request(app)
-          .put("/api/users/update-user")
-          .set("x-api-token", ADMIN_TOKEN)
-          .set("x-auth-token", AUTH_TOKEN)
-          .send({ zynkEntityId: validZynkId });
-
-        expect(response.status).toBe(200);
+        expectSuccessResponse(response, 200);
       });
     });
   });
@@ -780,14 +425,11 @@ describe("User Routes", () => {
   // DELETE /api/users/delete-user - Delete User
   // ============================================================
   describe("DELETE /api/users/delete-user", () => {
-    it("should return 401 when x-auth-token is missing", async () => {
-      const response = await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. No token provided.");
+    it.each([
+      { desc: "x-auth-token is missing", setup: () => request(app).delete("/api/users/delete-user").set("x-api-token", ADMIN_TOKEN) },
+    ])("should return 401 when $desc", async ({ setup }) => {
+      const response = await setup();
+      expectErrorResponse(response, 401, "Access denied. No token provided.");
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
@@ -798,58 +440,39 @@ describe("User Routes", () => {
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", "invalid-token");
 
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
+      expectErrorResponse(response, 401);
     });
 
     it("should return 200 on successful deletion", async () => {
       mockDelete.mockResolvedValue(mockUser);
 
-      const response = await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("delete", "/api/users/delete-user");
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("User deleted successfully");
+      expectSuccessResponse(response, 200, "User deleted successfully");
     });
 
     it("should use authenticated user ID for deletion", async () => {
       mockDelete.mockResolvedValue(mockUser);
 
-      await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      await authRequest("delete", "/api/users/delete-user");
 
       expect(mockDelete).toHaveBeenCalledWith(mockUser.id);
     });
 
     it("should return 404 when user is not found", async () => {
-      mockDelete.mockRejectedValue(
-        new CustomError(404, "User not found")
-      );
+      mockDelete.mockRejectedValue(new CustomError(404, "User not found"));
 
-      const response = await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("delete", "/api/users/delete-user");
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("User not found");
+      expectErrorResponse(response, 404, "User not found");
     });
 
     it("should not return deleted user data (only success message)", async () => {
       mockDelete.mockResolvedValue(mockUser);
 
-      const response = await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("delete", "/api/users/delete-user");
 
-      expect(response.status).toBe(200);
+      expectSuccessResponse(response, 200);
       expect(response.body.data).toBeUndefined();
     });
   });
@@ -858,124 +481,45 @@ describe("User Routes", () => {
   // Error Handling Tests
   // ============================================================
   describe("Error Handling", () => {
-    it("should return 500 for unexpected errors in getById", async () => {
-      mockGetById.mockRejectedValue(
-        new CustomError(500, "Database connection failed")
-      );
+    it.each([
+      { method: "get" as const, endpoint: "/api/users/me", mockFn: () => mockGetById, desc: "getById" },
+      { method: "post" as const, endpoint: "/api/users", mockFn: () => mockCreate, desc: "create", payload: validCreateUserPayload, useAuth: false },
+      { method: "put" as const, endpoint: "/api/users/update-user", mockFn: () => mockUpdate, desc: "update", payload: validUpdateUserPayload },
+      { method: "delete" as const, endpoint: "/api/users/delete-user", mockFn: () => mockDelete, desc: "delete" },
+    ])("should return 500 for unexpected errors in $desc", async ({ method, endpoint, mockFn, payload, useAuth = true }) => {
+      mockFn().mockRejectedValue(new CustomError(500, "Database error"));
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      let req = request(app)[method](endpoint).set("x-api-token", ADMIN_TOKEN);
+      if (useAuth) {
+        req = req.set("x-auth-token", AUTH_TOKEN);
+      }
+      if (payload) {
+        req = req.send(payload);
+      }
 
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 500 for unexpected errors in create", async () => {
-      mockCreate.mockRejectedValue(
-        new CustomError(500, "Database error")
-      );
-
-      const response = await request(app)
-        .post("/api/users")
-        .set("x-api-token", ADMIN_TOKEN)
-        .send(validCreateUserPayload);
-
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 500 for unexpected errors in update", async () => {
-      mockUpdate.mockRejectedValue(
-        new CustomError(500, "Database error")
-      );
-
-      const response = await request(app)
-        .put("/api/users/update-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN)
-        .send(validUpdateUserPayload);
-
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-    });
-
-    it("should return 500 for unexpected errors in delete", async () => {
-      mockDelete.mockRejectedValue(
-        new CustomError(500, "Database error")
-      );
-
-      const response = await request(app)
-        .delete("/api/users/delete-user")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
+      const response = await req;
+      expectErrorResponse(response, 500);
     });
 
     it("should handle non-Error exceptions gracefully", async () => {
       mockGetById.mockRejectedValue("String error");
 
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
+      const response = await authRequest("get", "/api/users/me");
 
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Internal server error");
+      expectErrorResponse(response, 500, "Internal server error");
     });
   });
 
   // ===========================================
-  // Response Format Tests
+  // Response Format Tests (using shared helper)
   // ===========================================
-  describe("Response Format", () => {
-    it("should always return success boolean", async () => {
-      mockGetById.mockResolvedValue(mockUserWithAddress);
-
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(typeof response.body.success).toBe("boolean");
-    });
-
-    it("should always return message string", async () => {
-      mockGetById.mockResolvedValue(mockUserWithAddress);
-
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(typeof response.body.message).toBe("string");
-    });
-
-    it("should return JSON content type", async () => {
-      mockGetById.mockResolvedValue(mockUserWithAddress);
-
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.headers["content-type"]).toMatch(/application\/json/);
-    });
-
-    it("should return error response for internal server errors", async () => {
-      mockGetById.mockRejectedValue(new Error("Database connection failed"));
-
-      const response = await request(app)
-        .get("/api/users/me")
-        .set("x-api-token", ADMIN_TOKEN)
-        .set("x-auth-token", AUTH_TOKEN);
-
-      expect(response.status).toBe(500);
-      expect(response.body.success).toBe(false);
-    });
+  createResponseFormatTests({
+    getApp: () => app,
+    endpoint: "/api/users/me",
+    method: "get",
+    adminToken: ADMIN_TOKEN,
+    authToken: AUTH_TOKEN,
+    setupSuccessMock: () => mockGetById.mockResolvedValue(mockUserWithAddress),
+    setupErrorMock: () => mockGetById.mockRejectedValue(new Error("Database connection failed")),
   });
 });
