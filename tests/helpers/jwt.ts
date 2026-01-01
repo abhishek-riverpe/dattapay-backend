@@ -1,10 +1,10 @@
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 
 function base64UrlEncode(buffer: Buffer): string {
   let encoded = buffer
     .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_");
 
   // Remove trailing '=' padding without regex
   while (encoded.endsWith("=")) {

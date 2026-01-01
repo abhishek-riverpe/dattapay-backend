@@ -16,8 +16,8 @@ export interface RequestBuilderConfig {
  */
 export class AuthenticatedRequestBuilder {
   private app: Express;
-  private adminToken: string;
-  private authToken: string;
+  private readonly adminToken: string;
+  private readonly authToken: string;
 
   constructor(config: RequestBuilderConfig) {
     this.app = config.app;

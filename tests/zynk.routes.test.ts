@@ -98,6 +98,30 @@ describe("Zynk Routes", () => {
       .set("x-auth-token", AUTH_TOKEN);
   }
 
+type EndpointCase = {
+  method: "get" | "post";
+  endpoint: string;
+  mockFn: () => jest.Mock;
+  name: string;
+};
+
+function runErrorSuite(
+  title: string,
+  cases: EndpointCase[],
+  errorFactory: () => CustomError,
+  expectedStatus: number,
+  messageContains: string
+) {
+  describe.each(cases)(title, ({ method, endpoint, mockFn }) => {
+    it(`should return ${expectedStatus} when ${messageContains}`, async () => {
+      mockFn().mockRejectedValue(errorFactory() as never);
+
+      const response = await authRequest(method, endpoint);
+      expectErrorResponse(response, expectedStatus, messageContains);
+    });
+  });
+}
+
   // ===========================================
   // Admin Middleware Tests (using shared helper)
   // ===========================================
@@ -126,57 +150,56 @@ describe("Zynk Routes", () => {
   });
 
   // ===========================================
-  // Common Error Scenarios (Parameterized Tests)
+  // Parameterized Error Scenarios
   // ===========================================
-  describe.each([
-    { method: "post" as const, endpoint: "/api/zynk/entities", mockFn: () => mockCreateEntity, name: "entities" },
-    { method: "post" as const, endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
-    { method: "get" as const, endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
-    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
-  ])("$name - Common Errors", ({ method, endpoint, mockFn }) => {
-    it("should return 404 when user not found", async () => {
-      mockFn().mockRejectedValue(new CustomError(404, "User not found"));
+  const commonErrorCases: EndpointCase[] = [
+    { method: "post", endpoint: "/api/zynk/entities", mockFn: () => mockCreateEntity, name: "entities" },
+    { method: "post", endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
+    { method: "get", endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
+    { method: "post", endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
+    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ];
 
-      const response = await authRequest(method, endpoint);
-      expectErrorResponse(response, 404, "not found");
-    });
-  });
+  const noEntityCases: EndpointCase[] = [
+    { method: "post", endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
+    { method: "get", endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
+    { method: "post", endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
+    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ];
 
-  describe.each([
-    { method: "post" as const, endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
-    { method: "get" as const, endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
-    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
-  ])("$name - No Zynk Entity", ({ method, endpoint, mockFn }) => {
-    it("should return 400 when user has no Zynk entity", async () => {
-      mockFn().mockRejectedValue(
-        new CustomError(400, "User does not have a Zynk entity. Create entity first.")
-      );
+  const noFundingCases: EndpointCase[] = [
+    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
+    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
+    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+  ];
 
-      const response = await authRequest(method, endpoint);
-      expectErrorResponse(response, 400, "Zynk entity");
-    });
-  });
+  runErrorSuite(
+    "$name - Common Errors",
+    commonErrorCases,
+    () => new CustomError(404, "User not found"),
+    404,
+    "not found"
+  );
 
-  describe.each([
-    { method: "get" as const, endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post" as const, endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
-  ])("$name - No Funding Account", ({ method, endpoint, mockFn }) => {
-    it("should return 400 when user has no funding account", async () => {
-      mockFn().mockRejectedValue(
-        new CustomError(400, "User does not have a funding account. Create funding account first.")
-      );
+  runErrorSuite(
+    "$name - No Zynk Entity",
+    noEntityCases,
+    () => new CustomError(400, "User does not have a Zynk entity. Create entity first."),
+    400,
+    "Zynk entity"
+  );
 
-      const response = await authRequest(method, endpoint);
-      expectErrorResponse(response, 400, "funding account");
-    });
-  });
+  runErrorSuite(
+    "$name - No Funding Account",
+    noFundingCases,
+    () => new CustomError(400, "User does not have a funding account. Create funding account first."),
+    400,
+    "funding account"
+  );
 
   // ===========================================
   // POST /api/zynk/entities Tests

@@ -97,4 +97,4 @@ export const mockDeactivatedFundingAccount = {
   status: "inactive",
 };
 
-export { ADMIN_TOKEN, AUTH_TOKEN };
+export { ADMIN_TOKEN, AUTH_TOKEN } from "./common.fixtures";
