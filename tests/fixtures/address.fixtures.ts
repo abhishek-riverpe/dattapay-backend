@@ -1,4 +1,5 @@
 import type { Address, User } from "../../generated/prisma/client";
+import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
 // Base user for address relations
 const baseUser: User = {
@@ -99,5 +100,5 @@ export const exceedsMaxLengthPayload = {
   postalCode: "10001",
 };
 
-export const ADMIN_TOKEN = "test-admin-token";
+export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";

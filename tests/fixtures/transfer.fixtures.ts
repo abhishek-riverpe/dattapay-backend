@@ -1,4 +1,5 @@
 import type { User, ExternalAccount, Address } from "../../generated/prisma/client";
+import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
 // Base address for user relations
 const baseAddress: Address = {
@@ -179,7 +180,7 @@ export const mockTransferResponse = {
   message: "Transaction execution started successfully",
 };
 
-export const ADMIN_TOKEN = "test-admin-token";
+export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";
 
 // Valid UUIDs for tests

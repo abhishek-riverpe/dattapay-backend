@@ -1,7 +1,7 @@
 import { jest } from "@jest/globals";
 
 // Set test environment variables
-process.env.ADMIN_API_TOKEN = "test-admin-token";
+process.env.ADMIN_TOKEN_SECRET = "test-admin-secret";
 process.env.CLERK_SECRET_KEY = "test-clerk-secret";
 process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
 

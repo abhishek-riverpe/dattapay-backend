@@ -1,4 +1,5 @@
 import type { User, Address } from "../../generated/prisma/client";
+import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
 // Base address for user relations
 const baseAddress: Address = {
@@ -116,5 +117,5 @@ export const mockDeactivatedFundingAccount = {
   status: "inactive",
 };
 
-export const ADMIN_TOKEN = "test-admin-token";
+export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
 export const AUTH_TOKEN = "valid-auth-token";

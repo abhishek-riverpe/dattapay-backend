@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { jest, describe, it, expect, beforeEach, beforeAll } from "@jest/globals";
+import type { Express } from "express";
 import request from "supertest";
-import { createTestApp } from "./helpers/testApp";
 import {
   mockUser,
   mockUserWithAddress,
@@ -9,70 +9,61 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/user.fixtures";
-import Error from "../lib/Error";
+import CustomError from "../lib/Error";
 
-// Create standalone mock functions that will be referenced in factories
-const mockVerifyToken = { fn: null as ReturnType<typeof import("@jest/globals").jest.fn> | null };
-const mockUserServiceFns = {
-  getAll: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  getById: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  getByEmail: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  getByClerkUserId: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  create: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  update: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-  delete: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-};
-const mockZynkRepositoryFns = {
-  checkEmailExists: null as ReturnType<typeof import("@jest/globals").jest.fn> | null,
-};
+// Mock functions
+const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetAll = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetById = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByEmail = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockCreate = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockUpdate = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockDelete = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockCheckEmailExists = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
-// Import after setting up mock references
-import { jest } from "@jest/globals";
-
-// Initialize the mocks
-mockVerifyToken.fn = jest.fn();
-mockUserServiceFns.getAll = jest.fn();
-mockUserServiceFns.getById = jest.fn();
-mockUserServiceFns.getByEmail = jest.fn();
-mockUserServiceFns.getByClerkUserId = jest.fn();
-mockUserServiceFns.create = jest.fn();
-mockUserServiceFns.update = jest.fn();
-mockUserServiceFns.delete = jest.fn();
-mockZynkRepositoryFns.checkEmailExists = jest.fn();
-
-// Mock dependencies with explicit factories
-jest.mock("@clerk/express", () => ({
-  verifyToken: mockVerifyToken.fn,
+// Use unstable_mockModule for ESM compatibility
+jest.unstable_mockModule("@clerk/express", () => ({
+  verifyToken: mockVerifyToken,
 }));
 
-jest.mock("../services/user.service", () => ({
+jest.unstable_mockModule("../services/user.service", () => ({
   default: {
-    getAll: mockUserServiceFns.getAll,
-    getById: mockUserServiceFns.getById,
-    getByEmail: mockUserServiceFns.getByEmail,
-    getByClerkUserId: mockUserServiceFns.getByClerkUserId,
-    create: mockUserServiceFns.create,
-    update: mockUserServiceFns.update,
-    delete: mockUserServiceFns.delete,
+    getAll: mockGetAll,
+    getById: mockGetById,
+    getByEmail: mockGetByEmail,
+    getByClerkUserId: mockGetByClerkUserId,
+    create: mockCreate,
+    update: mockUpdate,
+    delete: mockDelete,
   },
 }));
 
-jest.mock("../repositories/zynk.repository", () => ({
+jest.unstable_mockModule("../repositories/zynk.repository", () => ({
   default: {
-    checkEmailExists: mockZynkRepositoryFns.checkEmailExists,
+    checkEmailExists: mockCheckEmailExists,
   },
 }));
 
-const app = createTestApp();
+// Dynamic import after mocking
+let createTestApp: () => Express;
+
+beforeAll(async () => {
+  const module = await import("./helpers/testApp");
+  createTestApp = module.createTestApp;
+});
 
 describe("User Routes", () => {
+  let app: Express;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    app = createTestApp();
 
     // Default mock implementations
-    mockVerifyToken.fn!.mockResolvedValue({ sub: mockUser.clerkUserId });
-    mockUserServiceFns.getByClerkUserId!.mockResolvedValue(mockUser);
-    mockZynkRepositoryFns.checkEmailExists!.mockResolvedValue(false);
+    mockVerifyToken.mockResolvedValue({ sub: mockUser.clerkUserId });
+    mockGetByClerkUserId.mockResolvedValue(mockUser);
+    mockCheckEmailExists.mockResolvedValue(false);
   });
 
   // ============================================================
@@ -94,7 +85,7 @@ describe("User Routes", () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Access denied. Invalid Token.");
+      expect(response.body.message).toBe("Invalid or expired token.");
     });
   });
 
@@ -113,7 +104,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.fn!.mockRejectedValue(new Error(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
 
       const response = await request(app)
         .get("/api/users/me")
@@ -125,8 +116,8 @@ describe("User Routes", () => {
     });
 
     it("should return 404 when user is not found by clerk ID", async () => {
-      mockUserServiceFns.getByClerkUserId!.mockRejectedValue(
-        new Error(404, "User not found")
+      mockGetByClerkUserId.mockRejectedValue(
+        new CustomError(404, "User not found")
       );
 
       const response = await request(app)
@@ -139,7 +130,7 @@ describe("User Routes", () => {
     });
 
     it("should return 200 and user data on success", async () => {
-      mockUserServiceFns.getById!.mockResolvedValue(mockUserWithAddress);
+      mockGetById.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
         .get("/api/users/me")
@@ -150,11 +141,11 @@ describe("User Routes", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe("User retrieved successfully");
       expect(response.body.data).toBeDefined();
-      expect(mockUserServiceFns.getById).toHaveBeenCalledWith(mockUser.id);
+      expect(mockGetById).toHaveBeenCalledWith(mockUser.id);
     });
 
     it("should return user with address relationship", async () => {
-      mockUserServiceFns.getById!.mockResolvedValue(mockUserWithAddress);
+      mockGetById.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
         .get("/api/users/me")
@@ -166,8 +157,8 @@ describe("User Routes", () => {
     });
 
     it("should return 404 when getById service throws not found error", async () => {
-      mockUserServiceFns.getById!.mockRejectedValue(
-        new Error(404, "User not found")
+      mockGetById.mockRejectedValue(
+        new CustomError(404, "User not found")
       );
 
       const response = await request(app)
@@ -196,7 +187,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.fn!.mockRejectedValue(new Error(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
 
       const response = await request(app)
         .get("/api/users/email")
@@ -208,7 +199,7 @@ describe("User Routes", () => {
     });
 
     it("should return 200 and user data on success", async () => {
-      mockUserServiceFns.getByEmail!.mockResolvedValue(mockUserWithAddress);
+      mockGetByEmail.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
         .get("/api/users/email")
@@ -219,12 +210,12 @@ describe("User Routes", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe("User retrieved successfully");
       expect(response.body.data).toBeDefined();
-      expect(mockUserServiceFns.getByEmail).toHaveBeenCalledWith(mockUser.email);
+      expect(mockGetByEmail).toHaveBeenCalledWith(mockUser.email);
     });
 
     it("should return 404 when user is not found by email", async () => {
-      mockUserServiceFns.getByEmail!.mockRejectedValue(
-        new Error(404, "User not found")
+      mockGetByEmail.mockRejectedValue(
+        new CustomError(404, "User not found")
       );
 
       const response = await request(app)
@@ -238,14 +229,14 @@ describe("User Routes", () => {
     });
 
     it("should use authenticated user email for lookup", async () => {
-      mockUserServiceFns.getByEmail!.mockResolvedValue(mockUserWithAddress);
+      mockGetByEmail.mockResolvedValue(mockUserWithAddress);
 
       await request(app)
         .get("/api/users/email")
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(mockUserServiceFns.getByEmail).toHaveBeenCalledWith(mockUser.email);
+      expect(mockGetByEmail).toHaveBeenCalledWith(mockUser.email);
     });
   });
 
@@ -259,7 +250,7 @@ describe("User Routes", () => {
         ...validCreateUserPayload,
         dateOfBirth: new Date(validCreateUserPayload.dateOfBirth),
       };
-      mockUserServiceFns.create!.mockResolvedValue(createdUser);
+      mockCreate.mockResolvedValue(createdUser);
 
       const response = await request(app)
         .post("/api/users")
@@ -273,20 +264,20 @@ describe("User Routes", () => {
     });
 
     it("should call zynkEmailCheck middleware", async () => {
-      mockUserServiceFns.create!.mockResolvedValue(mockUser);
+      mockCreate.mockResolvedValue(mockUser);
 
       await request(app)
         .post("/api/users")
         .set("x-api-token", ADMIN_TOKEN)
         .send(validCreateUserPayload);
 
-      expect(mockZynkRepositoryFns.checkEmailExists).toHaveBeenCalledWith(
+      expect(mockCheckEmailExists).toHaveBeenCalledWith(
         validCreateUserPayload.email
       );
     });
 
     it("should return 409 when email exists in Zynk system", async () => {
-      mockZynkRepositoryFns.checkEmailExists!.mockResolvedValue(true);
+      mockCheckEmailExists.mockResolvedValue(true);
 
       const response = await request(app)
         .post("/api/users")
@@ -301,8 +292,8 @@ describe("User Routes", () => {
     });
 
     it("should return 409 when email already exists in database", async () => {
-      mockUserServiceFns.create!.mockRejectedValue(
-        new Error(409, "User with this email already exists")
+      mockCreate.mockRejectedValue(
+        new CustomError(409, "User with this email already exists")
       );
 
       const response = await request(app)
@@ -523,7 +514,7 @@ describe("User Routes", () => {
     });
 
     it("should not require auth token for POST (no auth middleware)", async () => {
-      mockUserServiceFns.create!.mockResolvedValue(mockUser);
+      mockCreate.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .post("/api/users")
@@ -545,7 +536,7 @@ describe("User Routes", () => {
 
       // zynkRepository should not be called when email is missing
       // (validation will fail first, but middleware should skip)
-      expect(mockZynkRepositoryFns.checkEmailExists).not.toHaveBeenCalled();
+      expect(mockCheckEmailExists).not.toHaveBeenCalled();
     });
   });
 
@@ -565,7 +556,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.fn!.mockRejectedValue(new Error(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
 
       const response = await request(app)
         .put("/api/users/update-user")
@@ -579,7 +570,7 @@ describe("User Routes", () => {
 
     it("should return 200 and updated user on success", async () => {
       const updatedUser = { ...mockUserWithAddress, ...validUpdateUserPayload };
-      mockUserServiceFns.update!.mockResolvedValue(updatedUser);
+      mockUpdate.mockResolvedValue(updatedUser);
 
       const response = await request(app)
         .put("/api/users/update-user")
@@ -594,7 +585,7 @@ describe("User Routes", () => {
     });
 
     it("should use authenticated user ID for update", async () => {
-      mockUserServiceFns.update!.mockResolvedValue(mockUserWithAddress);
+      mockUpdate.mockResolvedValue(mockUserWithAddress);
 
       await request(app)
         .put("/api/users/update-user")
@@ -602,15 +593,15 @@ describe("User Routes", () => {
         .set("x-auth-token", AUTH_TOKEN)
         .send(validUpdateUserPayload);
 
-      expect(mockUserServiceFns.update).toHaveBeenCalledWith(
+      expect(mockUpdate).toHaveBeenCalledWith(
         mockUser.id,
         validUpdateUserPayload
       );
     });
 
     it("should return 404 when user is not found", async () => {
-      mockUserServiceFns.update!.mockRejectedValue(
-        new Error(404, "User not found")
+      mockUpdate.mockRejectedValue(
+        new CustomError(404, "User not found")
       );
 
       const response = await request(app)
@@ -625,8 +616,8 @@ describe("User Routes", () => {
     });
 
     it("should return 409 when trying to update to existing email", async () => {
-      mockUserServiceFns.update!.mockRejectedValue(
-        new Error(409, "User with this email already exists")
+      mockUpdate.mockRejectedValue(
+        new CustomError(409, "User with this email already exists")
       );
 
       const response = await request(app)
@@ -716,7 +707,7 @@ describe("User Routes", () => {
       });
 
       it("should allow partial updates with single field", async () => {
-        mockUserServiceFns.update!.mockResolvedValue(mockUserWithAddress);
+        mockUpdate.mockResolvedValue(mockUserWithAddress);
 
         const response = await request(app)
           .put("/api/users/update-user")
@@ -725,13 +716,13 @@ describe("User Routes", () => {
           .send({ firstName: "UpdatedName" });
 
         expect(response.status).toBe(200);
-        expect(mockUserServiceFns.update).toHaveBeenCalledWith(mockUser.id, {
+        expect(mockUpdate).toHaveBeenCalledWith(mockUser.id, {
           firstName: "UpdatedName",
         });
       });
 
       it("should allow updating multiple fields at once", async () => {
-        mockUserServiceFns.update!.mockResolvedValue(mockUserWithAddress);
+        mockUpdate.mockResolvedValue(mockUserWithAddress);
 
         const updateData = {
           firstName: "Updated",
@@ -746,11 +737,11 @@ describe("User Routes", () => {
           .send(updateData);
 
         expect(response.status).toBe(200);
-        expect(mockUserServiceFns.update).toHaveBeenCalledWith(mockUser.id, updateData);
+        expect(mockUpdate).toHaveBeenCalledWith(mockUser.id, updateData);
       });
 
       it("should allow updating email to valid format", async () => {
-        mockUserServiceFns.update!.mockResolvedValue(mockUserWithAddress);
+        mockUpdate.mockResolvedValue(mockUserWithAddress);
 
         const response = await request(app)
           .put("/api/users/update-user")
@@ -762,7 +753,7 @@ describe("User Routes", () => {
       });
 
       it("should allow updating valid zynkEntityId", async () => {
-        mockUserServiceFns.update!.mockResolvedValue(mockUserWithAddress);
+        mockUpdate.mockResolvedValue(mockUserWithAddress);
 
         const validZynkId = "a".repeat(35); // Between 30-50 chars
 
@@ -792,7 +783,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.fn!.mockRejectedValue(new Error(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
 
       const response = await request(app)
         .delete("/api/users/delete-user")
@@ -804,7 +795,7 @@ describe("User Routes", () => {
     });
 
     it("should return 200 on successful deletion", async () => {
-      mockUserServiceFns.delete!.mockResolvedValue(mockUser);
+      mockDelete.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .delete("/api/users/delete-user")
@@ -817,19 +808,19 @@ describe("User Routes", () => {
     });
 
     it("should use authenticated user ID for deletion", async () => {
-      mockUserServiceFns.delete!.mockResolvedValue(mockUser);
+      mockDelete.mockResolvedValue(mockUser);
 
       await request(app)
         .delete("/api/users/delete-user")
         .set("x-api-token", ADMIN_TOKEN)
         .set("x-auth-token", AUTH_TOKEN);
 
-      expect(mockUserServiceFns.delete).toHaveBeenCalledWith(mockUser.id);
+      expect(mockDelete).toHaveBeenCalledWith(mockUser.id);
     });
 
     it("should return 404 when user is not found", async () => {
-      mockUserServiceFns.delete!.mockRejectedValue(
-        new Error(404, "User not found")
+      mockDelete.mockRejectedValue(
+        new CustomError(404, "User not found")
       );
 
       const response = await request(app)
@@ -843,7 +834,7 @@ describe("User Routes", () => {
     });
 
     it("should not return deleted user data (only success message)", async () => {
-      mockUserServiceFns.delete!.mockResolvedValue(mockUser);
+      mockDelete.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .delete("/api/users/delete-user")
@@ -860,8 +851,8 @@ describe("User Routes", () => {
   // ============================================================
   describe("Error Handling", () => {
     it("should return 500 for unexpected errors in getById", async () => {
-      mockUserServiceFns.getById!.mockRejectedValue(
-        new Error(500, "Database connection failed")
+      mockGetById.mockRejectedValue(
+        new CustomError(500, "Database connection failed")
       );
 
       const response = await request(app)
@@ -874,8 +865,8 @@ describe("User Routes", () => {
     });
 
     it("should return 500 for unexpected errors in create", async () => {
-      mockUserServiceFns.create!.mockRejectedValue(
-        new Error(500, "Database error")
+      mockCreate.mockRejectedValue(
+        new CustomError(500, "Database error")
       );
 
       const response = await request(app)
@@ -888,8 +879,8 @@ describe("User Routes", () => {
     });
 
     it("should return 500 for unexpected errors in update", async () => {
-      mockUserServiceFns.update!.mockRejectedValue(
-        new Error(500, "Database error")
+      mockUpdate.mockRejectedValue(
+        new CustomError(500, "Database error")
       );
 
       const response = await request(app)
@@ -903,8 +894,8 @@ describe("User Routes", () => {
     });
 
     it("should return 500 for unexpected errors in delete", async () => {
-      mockUserServiceFns.delete!.mockRejectedValue(
-        new Error(500, "Database error")
+      mockDelete.mockRejectedValue(
+        new CustomError(500, "Database error")
       );
 
       const response = await request(app)
@@ -917,7 +908,7 @@ describe("User Routes", () => {
     });
 
     it("should handle non-Error exceptions gracefully", async () => {
-      mockUserServiceFns.getById!.mockRejectedValue("String error");
+      mockGetById.mockRejectedValue("String error");
 
       const response = await request(app)
         .get("/api/users/me")
@@ -935,7 +926,7 @@ describe("User Routes", () => {
   // ============================================================
   describe("Response Format", () => {
     it("should return consistent success response format", async () => {
-      mockUserServiceFns.getById!.mockResolvedValue(mockUserWithAddress);
+      mockGetById.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
         .get("/api/users/me")
@@ -962,7 +953,7 @@ describe("User Routes", () => {
     });
 
     it("should return JSON content type", async () => {
-      mockUserServiceFns.getById!.mockResolvedValue(mockUserWithAddress);
+      mockGetById.mockResolvedValue(mockUserWithAddress);
 
       const response = await request(app)
         .get("/api/users/me")
