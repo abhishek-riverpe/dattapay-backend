@@ -1,5 +1,4 @@
 import type { User } from "../../generated/prisma/client";
-import { VALID_ADMIN_TOKEN } from "../helpers/jwt";
 
 // Base user data without address
 const baseUserData: User = {
@@ -65,5 +64,4 @@ export const invalidCreateUserPayload = {
   // Missing required fields
 };
 
-export const ADMIN_TOKEN = VALID_ADMIN_TOKEN;
-export const AUTH_TOKEN = "valid-auth-token";
+export { ADMIN_TOKEN, AUTH_TOKEN } from "./common.fixtures";

@@ -3,8 +3,6 @@ import {
   baseAddress,
   baseUserData,
   USER_ID,
-  ADMIN_TOKEN,
-  AUTH_TOKEN,
 } from "./common.fixtures";
 
 // User for auth middleware (with KYC completed)
@@ -147,4 +145,4 @@ export const mockTransferResponse = {
   message: "Transaction execution started successfully",
 };
 
-export { ADMIN_TOKEN, AUTH_TOKEN };
+export { ADMIN_TOKEN, AUTH_TOKEN } from "./common.fixtures";

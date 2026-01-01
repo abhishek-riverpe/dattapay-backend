@@ -3,8 +3,6 @@ import {
   baseAddress,
   baseUserData,
   USER_ID,
-  ADMIN_TOKEN,
-  AUTH_TOKEN,
 } from "./common.fixtures";
 
 // Domain-specific ID constants
@@ -122,4 +120,4 @@ export const invalidPayloads = {
   emptyId: { externalAccountId: "" },
 } as const;
 
-export { ADMIN_TOKEN, AUTH_TOKEN };
+export { ADMIN_TOKEN, AUTH_TOKEN } from "./common.fixtures";

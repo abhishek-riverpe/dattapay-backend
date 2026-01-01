@@ -3,8 +3,6 @@ import {
   baseUserData as commonBaseUserData,
   ZYNK_ENTITY_ID,
   FUNDING_ACCOUNT_ID,
-  ADMIN_TOKEN,
-  AUTH_TOKEN,
 } from "./common.fixtures";
 
 // Zynk-specific base user data (INITIAL status, no zynk data yet)
