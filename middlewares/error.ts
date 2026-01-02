@@ -13,7 +13,6 @@ const error = (
   res: ExpressResponse,
   next: NextFunction
 ) => {
-  console.error(err);
   if (err instanceof AppError)
     return res.status(err.status).send(new APIResponse(false, err.message));
   return res.status(500).send(new APIResponse(false, "Internal server error"));

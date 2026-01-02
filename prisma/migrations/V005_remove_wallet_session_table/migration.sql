@@ -11,4 +11,4 @@ ALTER TABLE "wallet_sessions" DROP CONSTRAINT "wallet_sessions_userId_fkey";
 DROP TABLE "wallet_sessions";
 
 -- DropEnum
-DROP TYPE "SessionStatus";
+DROP TYPE session_status;

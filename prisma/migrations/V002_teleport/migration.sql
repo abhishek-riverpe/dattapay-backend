@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "TeleportStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+CREATE TYPE teleport_status AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateTable
 CREATE TABLE "teleports" (
@@ -7,7 +7,7 @@ CREATE TABLE "teleports" (
     "userId" INTEGER NOT NULL,
     "externalAccountId" INTEGER NOT NULL,
     "zynkTeleportId" TEXT,
-    "status" "TeleportStatus" NOT NULL DEFAULT 'ACTIVE',
+    "status" teleport_status NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

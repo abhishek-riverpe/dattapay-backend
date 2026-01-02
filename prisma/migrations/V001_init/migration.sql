@@ -1,14 +1,14 @@
 -- CreateEnum
-CREATE TYPE "ExternalAccountStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+CREATE TYPE external_account_status AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateEnum
-CREATE TYPE "WalletStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+CREATE TYPE wallet_status AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateEnum
-CREATE TYPE "SessionStatus" AS ENUM ('PENDING', 'VERIFIED', 'EXPIRED', 'USED');
+CREATE TYPE session_status AS ENUM ('PENDING', 'VERIFIED', 'EXPIRED', 'USED');
 
 -- CreateEnum
-CREATE TYPE "AccountStatus" AS ENUM ('INITIAL', 'ACTIVE', 'PENDING', 'REJECTED');
+CREATE TYPE account_status AS ENUM ('INITIAL', 'ACTIVE', 'PENDING', 'REJECTED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -23,7 +23,7 @@ CREATE TABLE "users" (
     "phoneNumber" TEXT NOT NULL,
     "nationality" TEXT NOT NULL,
     "dateOfBirth" TIMESTAMP(3) NOT NULL,
-    "accountStatus" "AccountStatus" NOT NULL DEFAULT 'INITIAL',
+    "accountStatus" account_status NOT NULL DEFAULT 'INITIAL',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -54,7 +54,7 @@ CREATE TABLE "wallets" (
     "zynkWalletId" TEXT NOT NULL,
     "walletName" TEXT NOT NULL DEFAULT 'Primary Wallet',
     "chain" TEXT NOT NULL DEFAULT 'SOLANA',
-    "status" "WalletStatus" NOT NULL DEFAULT 'ACTIVE',
+    "status" wallet_status NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -83,7 +83,7 @@ CREATE TABLE "wallet_sessions" (
     "otpId" TEXT NOT NULL,
     "sessionPublicKey" TEXT,
     "sessionPrivateKey" TEXT,
-    "status" "SessionStatus" NOT NULL DEFAULT 'PENDING',
+    "status" session_status NOT NULL DEFAULT 'PENDING',
     "expiresAt" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE "external_accounts" (
     "zynkExternalAccountId" TEXT,
     "walletAddress" TEXT NOT NULL,
     "label" TEXT,
-    "status" "ExternalAccountStatus" NOT NULL DEFAULT 'ACTIVE',
+    "status" external_account_status NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
