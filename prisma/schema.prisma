@@ -115,16 +115,22 @@ model Teleport {
 enum ExternalAccountStatus {
   ACTIVE
   INACTIVE
+
+  @@map("external_account_status")
 }
 
 enum TeleportStatus {
   ACTIVE
   INACTIVE
+
+  @@map("teleport_status")
 }
 
 enum WalletStatus {
   ACTIVE
   INACTIVE
+
+  @@map("wallet_status")
 }
 
 enum AccountStatus {
@@ -132,4 +138,6 @@ enum AccountStatus {
   ACTIVE
   PENDING
   REJECTED
+
+  @@map("account_status")
 }
