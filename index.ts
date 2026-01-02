@@ -13,6 +13,25 @@ import webhooks from "./routes/webhook.routes";
 
 dotenv.config();
 
+// Validate required environment variables at startup
+const REQUIRED_ENV_VARS = [
+  "DATABASE_URL",
+  "ADMIN_TOKEN_SECRET",
+  "CLERK_PUBLISHABLE_KEY",
+  "CLERK_SECRET_KEY",
+  "ZYNK_API_KEY",
+  "ZYNK_BASE_URL",
+  "ZYNK_WEBHOOK_SECRET",
+  "ZYNK_ROUTING_ID",
+  "ZYNK_JURISDICTION_ID",
+] as const;
+
+const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+if (missingVars.length > 0) {
+  logger.error(`Missing required environment variables: ${missingVars.join(", ")}`);
+  process.exit(1);
+}
+
 const app = express();
 
 app.use(
@@ -109,8 +128,9 @@ const webhookRateLimiter = rateLimit({
   message: { success: false, message: "Too many webhook requests. Please try again later." },
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Request body size limits to prevent DoS attacks
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Apply stricter rate limits to financial endpoints
 app.use("/api/transfer", financialRateLimiter);
