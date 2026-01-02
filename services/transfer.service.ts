@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import AppError from "../lib/AppError";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
@@ -74,7 +74,7 @@ class TransferService {
     }
 
     // Generate transaction ID
-    const transactionId = `txn_${crypto.randomUUID().replace(/-/g, "_")}`;
+    const transactionId = `txn_${crypto.randomUUID().replaceAll("-", "_")}`;
 
     // Determine amount (prefer exactAmountIn if both provided)
     const exactAmountIn = data.exactAmountIn;
