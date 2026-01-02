@@ -75,6 +75,7 @@ app.use(
   })
 );
 
+// General rate limit for all endpoints
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -82,8 +83,32 @@ app.use(
   })
 );
 
+// Stricter rate limits for financial operations
+const financialRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { success: false, message: "Too many requests. Please try again later." },
+});
+
+const zynkRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  message: { success: false, message: "Too many requests. Please try again later." },
+});
+
+const externalAccountsRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  message: { success: false, message: "Too many requests. Please try again later." },
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply stricter rate limits to financial endpoints
+app.use("/api/transfer", financialRateLimiter);
+app.use("/api/zynk", zynkRateLimiter);
+app.use("/api/external-accounts", externalAccountsRateLimiter);
 
 app.use("/api", webhooks);
 app.use("/api", admin, router);
