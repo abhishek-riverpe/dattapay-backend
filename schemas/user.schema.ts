@@ -31,17 +31,23 @@ export const createUserSchema = Joi.object({
     "any.required": "Email is required",
   }),
 
-  phoneNumberPrefix: Joi.string().min(1).max(5).required().messages({
-    "string.empty": "Phone number prefix cannot be empty",
-    "string.max": "Phone number prefix cannot exceed 5 characters",
-    "any.required": "Phone number prefix is required",
-  }),
+  phoneNumberPrefix: Joi.string()
+    .pattern(/^\+[1-9]\d{0,3}$/)
+    .required()
+    .messages({
+      "string.empty": "Phone number prefix cannot be empty",
+      "string.pattern.base": "Phone number prefix must start with + followed by 1-4 digits (e.g., +1, +44, +91)",
+      "any.required": "Phone number prefix is required",
+    }),
 
-  phoneNumber: Joi.string().min(1).max(20).required().messages({
-    "string.empty": "Phone number cannot be empty",
-    "string.max": "Phone number cannot exceed 20 characters",
-    "any.required": "Phone number is required",
-  }),
+  phoneNumber: Joi.string()
+    .pattern(/^\d{4,15}$/)
+    .required()
+    .messages({
+      "string.empty": "Phone number cannot be empty",
+      "string.pattern.base": "Phone number must contain 4-15 digits only",
+      "any.required": "Phone number is required",
+    }),
 
   nationality: Joi.string().min(1).max(100).required().messages({
     "string.empty": "Nationality cannot be empty",
@@ -49,9 +55,10 @@ export const createUserSchema = Joi.object({
     "any.required": "Nationality is required",
   }),
 
-  dateOfBirth: Joi.date().iso().required().messages({
+  dateOfBirth: Joi.date().iso().max("now").required().messages({
     "date.base": "Please provide a valid date",
     "date.format": "Date must be in ISO format",
+    "date.max": "Date of birth cannot be in the future",
     "any.required": "Date of birth is required",
   }),
 });
@@ -72,24 +79,29 @@ export const updateUserSchema = Joi.object({
     "string.email": "Please provide a valid email address",
   }),
 
-  phoneNumberPrefix: Joi.string().min(1).max(5).messages({
-    "string.empty": "Phone number prefix cannot be empty",
-    "string.max": "Phone number prefix cannot exceed 5 characters",
-  }),
+  phoneNumberPrefix: Joi.string()
+    .pattern(/^\+[1-9]\d{0,3}$/)
+    .messages({
+      "string.empty": "Phone number prefix cannot be empty",
+      "string.pattern.base": "Phone number prefix must start with + followed by 1-4 digits (e.g., +1, +44, +91)",
+    }),
 
-  phoneNumber: Joi.string().min(1).max(20).messages({
-    "string.empty": "Phone number cannot be empty",
-    "string.max": "Phone number cannot exceed 20 characters",
-  }),
+  phoneNumber: Joi.string()
+    .pattern(/^\d{4,15}$/)
+    .messages({
+      "string.empty": "Phone number cannot be empty",
+      "string.pattern.base": "Phone number must contain 4-15 digits only",
+    }),
 
   nationality: Joi.string().min(1).max(100).messages({
     "string.empty": "Nationality cannot be empty",
     "string.max": "Nationality cannot exceed 100 characters",
   }),
 
-  dateOfBirth: Joi.date().iso().messages({
+  dateOfBirth: Joi.date().iso().max("now").messages({
     "date.base": "Please provide a valid date",
     "date.format": "Date must be in ISO format",
+    "date.max": "Date of birth cannot be in the future",
   }),
 })
   .min(1)
