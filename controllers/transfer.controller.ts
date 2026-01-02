@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import type { AuthRequest } from "../middlewares/auth";
 import transferService from "../services/transfer.service";
 import { simulateTransferSchema, transferSchema } from "../schemas/transfer.schema";
@@ -13,7 +13,7 @@ class TransferController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const result = await transferService.simulateTransfer(req.user.id, value);
@@ -33,7 +33,7 @@ class TransferController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const result = await transferService.transfer(value);

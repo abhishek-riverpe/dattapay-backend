@@ -1,4 +1,4 @@
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
@@ -11,7 +11,7 @@ class UserService {
   async getById(id: string) {
     const user = await userRepository.findById(id);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
     return user;
   }
@@ -19,7 +19,7 @@ class UserService {
   async getByEmail(email: string) {
     const user = await userRepository.findByEmail(email);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
     return user;
   }
@@ -27,7 +27,7 @@ class UserService {
   async getByClerkUserId(clerkUserId: string) {
     const user = await userRepository.findByClerkUserId(clerkUserId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
     return user;
   }
@@ -39,7 +39,7 @@ class UserService {
       });
 
       if (existingUser) {
-        throw new Error(409, "User with this email already exists");
+        throw new AppError(409, "User with this email already exists");
       }
 
       return tx.user.create({
@@ -57,7 +57,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new Error(404, "User not found");
+        throw new AppError(404, "User not found");
       }
 
       if (data.email && data.email !== user.email) {
@@ -66,7 +66,7 @@ class UserService {
         });
 
         if (existingUser) {
-          throw new Error(409, "User with this email already exists");
+          throw new AppError(409, "User with this email already exists");
         }
       }
 
@@ -85,7 +85,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new Error(404, "User not found");
+        throw new AppError(404, "User not found");
       }
 
       return tx.user.delete({

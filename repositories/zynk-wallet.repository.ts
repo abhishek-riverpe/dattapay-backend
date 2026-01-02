@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 
 // ============================================
 // Request/Response Interfaces
@@ -156,13 +156,13 @@ class ZynkWalletRepository {
       if (zynkError?.error) {
         const errorMessage =
           zynkError.error.details || zynkError.error.message;
-        throw new Error(zynkError.error.code, errorMessage);
+        throw new AppError(zynkError.error.code, errorMessage);
       }
 
-      throw new Error(error.response.status, defaultMessage);
+      throw new AppError(error.response.status, defaultMessage);
     }
 
-    throw new Error(500, "Failed to connect to Zynk API");
+    throw new AppError(500, "Failed to connect to Zynk API");
   }
 
   /**
@@ -273,7 +273,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet not found");
+        throw new AppError(404, "Wallet not found");
       }
       this.handleError(error, "Failed to get wallet details");
     }
@@ -290,7 +290,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet not found");
+        throw new AppError(404, "Wallet not found");
       }
       this.handleError(error, "Failed to get wallet balances");
     }
@@ -318,7 +318,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet or address not found");
+        throw new AppError(404, "Wallet or address not found");
       }
       this.handleError(error, "Failed to get transactions");
     }

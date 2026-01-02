@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import express from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import userRepository from "../repositories/user.repository";
 import zynkService from "../services/zynk.service";
 
@@ -51,15 +51,15 @@ router.post("/webhook", async (req: Request, res: Response) => {
   const secret = process.env.ZYNK_WEBHOOK_SECRET;
 
   if (!secret) {
-    throw new Error(500, "Webhook secret not configured");
+    throw new AppError(500, "Webhook secret not configured");
   }
 
   if (!signatureHeader || typeof signatureHeader !== "string") {
-    throw new Error(401, "Missing webhook signature");
+    throw new AppError(401, "Missing webhook signature");
   }
 
   if (!verifyWebhookSignature(req.body, signatureHeader, secret)) {
-    throw new Error(401, "Invalid webhook signature");
+    throw new AppError(401, "Invalid webhook signature");
   }
 
   const body: KYCEvent = req.body;
@@ -70,7 +70,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   const user = await userRepository.findByZynkEntityId(
     body.eventObject.entityId
   );
-  if (!user) throw new Error(404, "User not found");
+  if (!user) throw new AppError(404, "User not found");
   await userRepository.update(user.id, { accountStatus: "ACTIVE" });
   await zynkService.createFundingAccount(user.id);
   res.status(200).send(new APIResponse(true, "Success"));

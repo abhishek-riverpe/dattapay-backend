@@ -1,7 +1,7 @@
 import { verifyToken } from "@clerk/express";
 import type { NextFunction, Request, Response } from "express";
 import userService from "../services/user.service";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import type { User } from "../generated/prisma/client";
 
 export interface AuthRequest extends Request {
@@ -14,13 +14,13 @@ export default async function auth(
   next: NextFunction
 ) {
   const token = req.header("x-auth-token") as string;
-  if (!token) throw new Error(401, "Access denied. No token provided.");
+  if (!token) throw new AppError(401, "Access denied. No token provided.");
 
   try {
     // For tests, skip external verification but keep behaviour checks
     if (process.env.NODE_ENV === "test") {
       if (token === "invalid-token" || token.toLowerCase().includes("invalid")) {
-        throw new Error(401, "Invalid or expired token.");
+        throw new AppError(401, "Invalid or expired token.");
       }
 
       const testUserId =
@@ -58,10 +58,12 @@ export default async function auth(
 
     next();
   } catch (error) {
-    if (error instanceof Error) {
-      next(new Error(401, error.message));
+    if (error instanceof AppError) {
+      next(error);
+    } else if (error instanceof Error) {
+      next(new AppError(401, error.message));
     } else {
-      next(new Error(401, "Invalid or expired token."));
+      next(new AppError(401, "Invalid or expired token."));
     }
   }
 }

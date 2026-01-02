@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import type { ExternalAccountStatus } from "../generated/prisma/client";
 
 // ============================================
@@ -152,7 +152,7 @@ class ExternalAccountsRepository {
     const jurisdictionId = process.env.SOLANA_JURISDICTION_ID;
 
     if (!jurisdictionId) {
-      throw new Error(500, "SOLANA_JURISDICTION_ID is not configured");
+      throw new AppError(500, "SOLANA_JURISDICTION_ID is not configured");
     }
 
     const payload: ZynkExternalAccountData = {
@@ -178,16 +178,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to create external account in Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -207,16 +207,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to get external account from Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -235,16 +235,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to delete external account from Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 }

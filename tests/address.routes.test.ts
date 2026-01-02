@@ -14,7 +14,7 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/address.fixtures";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 
 // Mock functions
@@ -169,7 +169,7 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when address not found", async () => {
-      mockGetByUserId.mockRejectedValue(new CustomError(404, "Address not found for this user"));
+      mockGetByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
 
       const response = await request(app)
         .get("/api/addresses")
@@ -389,7 +389,7 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when user not found", async () => {
-      mockCreate.mockRejectedValue(new CustomError(404, "User not found"));
+      mockCreate.mockRejectedValue(new AppError(404, "User not found"));
 
       const response = await request(app)
         .post("/api/addresses")
@@ -403,7 +403,7 @@ describe("Address Routes", () => {
     });
 
     it("should return 409 when user already has an address", async () => {
-      mockCreate.mockRejectedValue(new CustomError(409, "User already has an address"));
+      mockCreate.mockRejectedValue(new AppError(409, "User already has an address"));
 
       const response = await request(app)
         .post("/api/addresses")
@@ -517,7 +517,7 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when address not found", async () => {
-      mockUpdateByUserId.mockRejectedValue(new CustomError(404, "Address not found for this user"));
+      mockUpdateByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
 
       const response = await request(app)
         .put("/api/addresses")
@@ -606,7 +606,7 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when address not found", async () => {
-      mockDeleteByUserId.mockRejectedValue(new CustomError(404, "Address not found for this user"));
+      mockDeleteByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
 
       const response = await request(app)
         .delete("/api/addresses")

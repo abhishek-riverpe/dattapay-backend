@@ -8,7 +8,7 @@ import {
 } from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import userService from "../services/user.service";
 import walletService from "../services/wallet.service";
 import {
@@ -161,8 +161,8 @@ describe("Wallet Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(400, "User must complete KYC before creating a wallet"), message: "KYC", desc: "user has not completed KYC" },
-      { error: new CustomError(400, "User already has a wallet"), message: "already has a wallet", desc: "user already has a wallet" },
+      { error: new AppError(400, "User must complete KYC before creating a wallet"), message: "KYC", desc: "user has not completed KYC" },
+      { error: new AppError(400, "User already has a wallet"), message: "already has a wallet", desc: "user already has a wallet" },
     ])("should return 400 when $desc", async ({ error, message }) => {
       mockPrepareWallet.mockRejectedValue(error);
 
@@ -197,8 +197,8 @@ describe("Wallet Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(400, "User must complete KYC before creating a wallet"), desc: "user has not completed KYC" },
-      { error: new CustomError(400, "User already has a wallet"), desc: "user already has a wallet" },
+      { error: new AppError(400, "User must complete KYC before creating a wallet"), desc: "user has not completed KYC" },
+      { error: new AppError(400, "User already has a wallet"), desc: "user already has a wallet" },
     ])("should return 400 when $desc", async ({ error }) => {
       mockSubmitWallet.mockRejectedValue(error);
 
@@ -235,8 +235,8 @@ describe("Wallet Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(404, "Wallet not found. Please create a wallet first."), status: 404, message: "Wallet not found", desc: "wallet not found" },
-      { error: new CustomError(400, "Wallet already has an account"), status: 400, message: "already has an account", desc: "wallet already has an account" },
+      { error: new AppError(404, "Wallet not found. Please create a wallet first."), status: 404, message: "Wallet not found", desc: "wallet not found" },
+      { error: new AppError(400, "Wallet already has an account"), status: 400, message: "already has an account", desc: "wallet already has an account" },
     ])("should return $status when $desc", async ({ error, status, message }) => {
       mockPrepareAccount.mockRejectedValue(error);
 
@@ -259,8 +259,8 @@ describe("Wallet Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(404, "Wallet not found. Please create a wallet first."), status: 404, desc: "wallet not found" },
-      { error: new CustomError(400, "Wallet already has an account"), status: 400, desc: "wallet already has an account" },
+      { error: new AppError(404, "Wallet not found. Please create a wallet first."), status: 404, desc: "wallet not found" },
+      { error: new AppError(400, "Wallet already has an account"), status: 400, desc: "wallet already has an account" },
     ])("should return $status when $desc", async ({ error, status }) => {
       mockSubmitAccount.mockRejectedValue(error);
 
@@ -296,7 +296,7 @@ describe("Wallet Routes", () => {
     });
 
     it("should return 404 when wallet not found", async () => {
-      mockGetWallet.mockRejectedValue(new CustomError(404, "Wallet not found. Please create a wallet first."));
+      mockGetWallet.mockRejectedValue(new AppError(404, "Wallet not found. Please create a wallet first."));
 
       const response = await authRequest("get", "/api/wallet");
       expectErrorResponse(response, 404, "Wallet not found");
@@ -350,7 +350,7 @@ describe("Wallet Routes", () => {
         { error: "Wallet not found. Please create a wallet first.", desc: "wallet not found" },
         { error: "Wallet account not found", desc: "wallet account not found" },
       ])("should return 404 when $desc", async ({ error }) => {
-        mockGetTransactions.mockRejectedValue(new CustomError(404, error));
+        mockGetTransactions.mockRejectedValue(new AppError(404, error));
 
         const response = await authRequest("get", "/api/wallet/transactions");
         expectErrorResponse(response, 404);

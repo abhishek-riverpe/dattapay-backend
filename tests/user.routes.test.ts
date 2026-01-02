@@ -9,7 +9,7 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/user.fixtures";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 import {
   createResponseFormatTests,
@@ -112,7 +112,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new AppError(401, "Invalid token"));
 
       const response = await request(app)
         .get("/api/users/me")
@@ -125,7 +125,7 @@ describe("User Routes", () => {
     (process.env.BYPASS_AUTH_USER_LOOKUP === "true" ? it.skip : it)(
       "should return 404 when user is not found by clerk ID",
       async () => {
-        mockGetByClerkUserId.mockRejectedValue(new CustomError(404, "User not found"));
+        mockGetByClerkUserId.mockRejectedValue(new AppError(404, "User not found"));
 
         const response = await authRequest("get", "/api/users/me");
         expectErrorResponse(response, 401);
@@ -152,7 +152,7 @@ describe("User Routes", () => {
     });
 
     it("should return 404 when getById service throws not found error", async () => {
-      mockGetById.mockRejectedValue(new CustomError(404, "User not found"));
+      mockGetById.mockRejectedValue(new AppError(404, "User not found"));
 
       const response = await authRequest("get", "/api/users/me");
 
@@ -166,7 +166,7 @@ describe("User Routes", () => {
   describe("GET /api/users/email", () => {
     it.each([
       { desc: "x-auth-token is missing", setup: () => request(app).get("/api/users/email").set("x-api-token", ADMIN_TOKEN) },
-      { desc: "x-auth-token is invalid", setup: () => { mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token")); return request(app).get("/api/users/email").set("x-api-token", ADMIN_TOKEN).set("x-auth-token", "invalid-token"); } },
+      { desc: "x-auth-token is invalid", setup: () => { mockVerifyToken.mockRejectedValue(new AppError(401, "Invalid token")); return request(app).get("/api/users/email").set("x-api-token", ADMIN_TOKEN).set("x-auth-token", "invalid-token"); } },
     ])("should return 401 when $desc", async ({ setup }) => {
       const response = await setup();
       expectErrorResponse(response, 401);
@@ -183,7 +183,7 @@ describe("User Routes", () => {
     });
 
     it("should return 404 when user is not found by email", async () => {
-      mockGetByEmail.mockRejectedValue(new CustomError(404, "User not found"));
+      mockGetByEmail.mockRejectedValue(new AppError(404, "User not found"));
 
       const response = await authRequest("get", "/api/users/email");
 
@@ -245,7 +245,7 @@ describe("User Routes", () => {
     });
 
     it("should return 409 when email already exists in database", async () => {
-      mockCreate.mockRejectedValue(new CustomError(409, "User with this email already exists"));
+      mockCreate.mockRejectedValue(new AppError(409, "User with this email already exists"));
 
       const response = await request(app)
         .post("/api/users")
@@ -355,7 +355,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new AppError(401, "Invalid token"));
 
       const response = await request(app)
         .put("/api/users/update-user")
@@ -385,8 +385,8 @@ describe("User Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(404, "User not found"), status: 404, message: "User not found", desc: "user is not found" },
-      { error: new CustomError(409, "User with this email already exists"), status: 409, message: "User with this email already exists", desc: "trying to update to existing email" },
+      { error: new AppError(404, "User not found"), status: 404, message: "User not found", desc: "user is not found" },
+      { error: new AppError(409, "User with this email already exists"), status: 409, message: "User with this email already exists", desc: "trying to update to existing email" },
     ])("should return $status when $desc", async ({ error, status, message }) => {
       mockUpdate.mockRejectedValue(error);
 
@@ -436,7 +436,7 @@ describe("User Routes", () => {
     });
 
     it("should return 401 when x-auth-token is invalid", async () => {
-      mockVerifyToken.mockRejectedValue(new CustomError(401, "Invalid token"));
+      mockVerifyToken.mockRejectedValue(new AppError(401, "Invalid token"));
 
       const response = await request(app)
         .delete("/api/users/delete-user")
@@ -463,7 +463,7 @@ describe("User Routes", () => {
     });
 
     it("should return 404 when user is not found", async () => {
-      mockDelete.mockRejectedValue(new CustomError(404, "User not found"));
+      mockDelete.mockRejectedValue(new AppError(404, "User not found"));
 
       const response = await authRequest("delete", "/api/users/delete-user");
 
@@ -490,7 +490,7 @@ describe("User Routes", () => {
       { method: "put" as const, endpoint: "/api/users/update-user", mockFn: () => mockUpdate, desc: "update", payload: validUpdateUserPayload },
       { method: "delete" as const, endpoint: "/api/users/delete-user", mockFn: () => mockDelete, desc: "delete" },
     ])("should return 500 for unexpected errors in $desc", async ({ method, endpoint, mockFn, payload, useAuth = true }) => {
-      mockFn().mockRejectedValue(new CustomError(500, "Database error"));
+      mockFn().mockRejectedValue(new AppError(500, "Database error"));
 
       let req = request(app)[method](endpoint).set("x-api-token", ADMIN_TOKEN);
       if (useAuth) {

@@ -21,7 +21,7 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/teleport.fixtures";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 import {
   createAdminMiddlewareTests,
@@ -145,8 +145,8 @@ describe("Teleport Routes", () => {
   // ==========================================
   describe("POST /api/teleport", () => {
     it.each([
-      { mockUser: mockUserWithoutZynkEntity, error: new CustomError(400, "User must have a Zynk entity"), message: "Zynk entity", desc: "user does not have zynk entity" },
-      { mockUser: mockUserWithoutFundingAccount, error: new CustomError(400, "User must have a funding account"), message: "funding account", desc: "user does not have funding account" },
+      { mockUser: mockUserWithoutZynkEntity, error: new AppError(400, "User must have a Zynk entity"), message: "Zynk entity", desc: "user does not have zynk entity" },
+      { mockUser: mockUserWithoutFundingAccount, error: new AppError(400, "User must have a funding account"), message: "funding account", desc: "user does not have funding account" },
     ])("should return 400 when $desc", async ({ mockUser: user, error, message }) => {
       mockGetByClerkUserId.mockResolvedValue(user);
       mockCreate.mockRejectedValue(error);
@@ -156,9 +156,9 @@ describe("Teleport Routes", () => {
     });
 
     it.each([
-      { error: new CustomError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
-      { error: new CustomError(400, "External account not registered with Zynk"), status: 400, message: "not registered with Zynk", desc: "external account is not registered with Zynk" },
-      { error: new CustomError(409, "User already has a teleport"), status: 409, message: "already has a teleport", desc: "user already has a teleport" },
+      { error: new AppError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
+      { error: new AppError(400, "External account not registered with Zynk"), status: 400, message: "not registered with Zynk", desc: "external account is not registered with Zynk" },
+      { error: new AppError(409, "User already has a teleport"), status: 409, message: "already has a teleport", desc: "user already has a teleport" },
     ])("should return $status when $desc", async ({ error, status, message }) => {
       mockCreate.mockRejectedValue(error);
 
@@ -204,7 +204,7 @@ describe("Teleport Routes", () => {
     });
 
     it("should return 404 when teleport is not found", async () => {
-      mockGet.mockRejectedValue(new CustomError(404, "Teleport not found"));
+      mockGet.mockRejectedValue(new AppError(404, "Teleport not found"));
 
       const response = await authRequest("get", "/api/teleport");
       expectErrorResponse(response, 404, "not found");
@@ -223,9 +223,9 @@ describe("Teleport Routes", () => {
   // ==========================================
   describe("PUT /api/teleport", () => {
     it.each([
-      { error: new CustomError(400, "User must have a Zynk entity"), status: 400, message: "Zynk entity", desc: "user does not have zynk entity" },
-      { error: new CustomError(404, "Teleport not found"), status: 404, message: "not found", desc: "teleport is not found" },
-      { error: new CustomError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
+      { error: new AppError(400, "User must have a Zynk entity"), status: 400, message: "Zynk entity", desc: "user does not have zynk entity" },
+      { error: new AppError(404, "Teleport not found"), status: 404, message: "not found", desc: "teleport is not found" },
+      { error: new AppError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
     ])("should return $status when $desc", async ({ error, status, message }) => {
       mockUpdate.mockRejectedValue(error);
 

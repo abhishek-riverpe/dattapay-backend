@@ -21,7 +21,7 @@ import {
   VALID_UUID,
   NON_EXISTENT_UUID,
 } from "./fixtures/external-accounts.fixtures";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 import {
   createAdminMiddlewareTests,
@@ -140,7 +140,7 @@ describe("External Accounts Routes", () => {
       it("should return 400 when user does not have zynk entity", async () => {
         mockGetByClerkUserId.mockResolvedValue(mockUserWithoutZynkEntity);
         mockCreate.mockRejectedValue(
-          new CustomError(400, "User must have a Zynk entity to add external accounts")
+          new AppError(400, "User must have a Zynk entity to add external accounts")
         );
 
         const response = await authRequest("post", "/api/external-accounts").send(validCreatePayload);
@@ -149,7 +149,7 @@ describe("External Accounts Routes", () => {
 
       it("should return 409 when external account already exists", async () => {
         mockCreate.mockRejectedValue(
-          new CustomError(409, "External account with this address already exists")
+          new AppError(409, "External account with this address already exists")
         );
 
         const response = await authRequest("post", "/api/external-accounts").send(validCreatePayload);
@@ -207,7 +207,7 @@ describe("External Accounts Routes", () => {
     });
 
     it("should return 404 when user not found in service", async () => {
-      mockList.mockRejectedValue(new CustomError(404, "User not found"));
+      mockList.mockRejectedValue(new AppError(404, "User not found"));
 
       const response = await authRequest("get", "/api/external-accounts");
       expectErrorResponse(response, 404);
@@ -228,7 +228,7 @@ describe("External Accounts Routes", () => {
 
     it("should return 404 when external account is not found", async () => {
       const mockFn = method === "get" ? mockGetById : mockDelete;
-      mockFn.mockRejectedValue(new CustomError(404, "External account not found"));
+      mockFn.mockRejectedValue(new AppError(404, "External account not found"));
 
       const response = await authRequest(method, `/api/external-accounts/${NON_EXISTENT_UUID}`);
       expectErrorResponse(response, 404, "not found");
@@ -271,7 +271,7 @@ describe("External Accounts Routes", () => {
     });
 
     it("should return 400 when user does not have zynk entity", async () => {
-      mockDelete.mockRejectedValue(new CustomError(400, "User does not have a Zynk entity"));
+      mockDelete.mockRejectedValue(new AppError(400, "User does not have a Zynk entity"));
 
       const response = await authRequest("delete", `/api/external-accounts/${VALID_UUID}`);
       expectErrorResponse(response, 400, "Zynk entity");

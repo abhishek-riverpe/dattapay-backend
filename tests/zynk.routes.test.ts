@@ -8,7 +8,7 @@ import {
 } from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
@@ -108,7 +108,7 @@ type EndpointCase = {
 function runErrorSuite(
   title: string,
   cases: EndpointCase[],
-  errorFactory: () => CustomError,
+  errorFactory: () => AppError,
   expectedStatus: number,
   messageContains: string
 ) {
@@ -180,7 +180,7 @@ function runErrorSuite(
   runErrorSuite(
     "$name - Common Errors",
     commonErrorCases,
-    () => new CustomError(404, "User not found"),
+    () => new AppError(404, "User not found"),
     404,
     "not found"
   );
@@ -188,7 +188,7 @@ function runErrorSuite(
   runErrorSuite(
     "$name - No Zynk Entity",
     noEntityCases,
-    () => new CustomError(400, "User does not have a Zynk entity. Create entity first."),
+    () => new AppError(400, "User does not have a Zynk entity. Create entity first."),
     400,
     "Zynk entity"
   );
@@ -196,7 +196,7 @@ function runErrorSuite(
   runErrorSuite(
     "$name - No Funding Account",
     noFundingCases,
-    () => new CustomError(400, "User does not have a funding account. Create funding account first."),
+    () => new AppError(400, "User does not have a funding account. Create funding account first."),
     400,
     "funding account"
   );
@@ -222,9 +222,9 @@ function runErrorSuite(
     });
 
     it.each([
-      { error: new CustomError(400, "User must have an address to create a Zynk entity"), message: "address", desc: "user has no address" },
-      { error: new CustomError(400, "User does not have a public key"), message: "public key", desc: "user has no public key" },
-      { error: new CustomError(409, "User already has a Zynk entity"), message: "already has", desc: "user already has a Zynk entity" },
+      { error: new AppError(400, "User must have an address to create a Zynk entity"), message: "address", desc: "user has no address" },
+      { error: new AppError(400, "User does not have a public key"), message: "public key", desc: "user has no public key" },
+      { error: new AppError(409, "User already has a Zynk entity"), message: "already has", desc: "user already has a Zynk entity" },
     ])("should return appropriate error when $desc", async ({ error, message }) => {
       mockCreateEntity.mockRejectedValue(error);
 
@@ -297,7 +297,7 @@ function runErrorSuite(
 
     it("should return 409 when user already has a funding account", async () => {
       mockCreateFundingAccount.mockRejectedValue(
-        new CustomError(409, "User already has a funding account")
+        new AppError(409, "User already has a funding account")
       );
 
       const response = await authRequest("post", "/api/zynk/funding-account");

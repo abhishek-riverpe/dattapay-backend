@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 
 // ============================================
 // Input Types
@@ -120,16 +120,16 @@ class TeleportRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to create teleport in Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 }

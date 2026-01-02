@@ -1,4 +1,4 @@
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
@@ -9,11 +9,11 @@ class ExternalAccountsService {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User must have a Zynk entity to add external accounts"
       );
@@ -37,7 +37,7 @@ class ExternalAccountsService {
       });
 
       if (existingAccount) {
-        throw new Error(409, "External account with this address already exists");
+        throw new AppError(409, "External account with this address already exists");
       }
 
       return tx.externalAccount.create({
@@ -56,7 +56,7 @@ class ExternalAccountsService {
   async list(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     const externalAccounts = await externalAccountsRepository.findAllByUserId(userId);
@@ -67,13 +67,13 @@ class ExternalAccountsService {
   async getById(userId: string, id: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     const externalAccount = await externalAccountsRepository.findById(id, userId);
 
     if (!externalAccount) {
-      throw new Error(404, "External account not found");
+      throw new AppError(404, "External account not found");
     }
 
     return externalAccount;
@@ -83,17 +83,17 @@ class ExternalAccountsService {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity");
+      throw new AppError(400, "User does not have a Zynk entity");
     }
 
     const externalAccount = await externalAccountsRepository.findById(id, userId);
 
     if (!externalAccount) {
-      throw new Error(404, "External account not found");
+      throw new AppError(404, "External account not found");
     }
 
     // Call external API first (cannot be rolled back)
@@ -111,7 +111,7 @@ class ExternalAccountsService {
       });
 
       if (!account) {
-        throw new Error(404, "External account not found");
+        throw new AppError(404, "External account not found");
       }
 
       await tx.externalAccount.update({

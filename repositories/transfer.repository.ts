@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 
 // ============================================
 // Input Types
@@ -101,13 +101,13 @@ class TransferRepository {
 
         if (zynkError?.error) {
           const errorMessage = zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to simulate transfer");
+        throw new AppError(error.response.status, "Failed to simulate transfer");
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -131,13 +131,13 @@ class TransferRepository {
 
         if (zynkError?.error) {
           const errorMessage = zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to execute transfer");
+        throw new AppError(error.response.status, "Failed to execute transfer");
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 }

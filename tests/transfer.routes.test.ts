@@ -21,7 +21,7 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/transfer.fixtures";
-import CustomError from "../lib/Error";
+import AppError from "../lib/Error";
 import type { TestAppConfig } from "./helpers";
 import {
   createAdminMiddlewareTests,
@@ -137,10 +137,10 @@ describe("Transfer Routes", () => {
 
     describe("Business Logic", () => {
       it.each([
-        { error: new CustomError(400, "User must complete KYC before making transfers"), message: "KYC", mockUser: mockUserWithoutZynkEntity, desc: "user has not completed KYC" },
-        { error: new CustomError(400, "User does not have a wallet. Please create a wallet first."), message: "wallet", mockUser: mockUser, desc: "user does not have a wallet" },
-        { error: new CustomError(404, "Destination external account not found"), message: "Destination external account not found", mockUser: mockUser, desc: "destination account is not found" },
-        { error: new CustomError(400, "Destination account must be a withdrawal type external account"), message: "withdrawal type", mockUser: mockUser, desc: "destination is not withdrawal type" },
+        { error: new AppError(400, "User must complete KYC before making transfers"), message: "KYC", mockUser: mockUserWithoutZynkEntity, desc: "user has not completed KYC" },
+        { error: new AppError(400, "User does not have a wallet. Please create a wallet first."), message: "wallet", mockUser: mockUser, desc: "user does not have a wallet" },
+        { error: new AppError(404, "Destination external account not found"), message: "Destination external account not found", mockUser: mockUser, desc: "destination account is not found" },
+        { error: new AppError(400, "Destination account must be a withdrawal type external account"), message: "withdrawal type", mockUser: mockUser, desc: "destination is not withdrawal type" },
       ])("should return appropriate error when $desc", async ({ error, message, mockUser: user }) => {
         mockGetByClerkUserId.mockResolvedValue(user);
         mockSimulateTransfer.mockRejectedValue(error);
@@ -212,8 +212,8 @@ describe("Transfer Routes", () => {
       });
 
       it.each([
-        { error: new CustomError(400, "Invalid execution ID"), desc: "execution ID is invalid" },
-        { error: new CustomError(400, "Invalid signature"), desc: "signature is invalid" },
+        { error: new AppError(400, "Invalid execution ID"), desc: "execution ID is invalid" },
+        { error: new AppError(400, "Invalid signature"), desc: "signature is invalid" },
       ])("should return 400 when $desc", async ({ error }) => {
         mockTransfer.mockRejectedValue(error);
 

@@ -3,7 +3,7 @@ import type { AuthRequest } from "../middlewares/auth";
 import userService from "../services/user.service";
 import APIResponse from "../lib/APIResponse";
 import { createUserSchema, updateUserSchema } from "../schemas/user.schema";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 
 class UserController {
   async getAll(req: AuthRequest, res: Response, next: NextFunction) {
@@ -43,7 +43,7 @@ class UserController {
     try {
       const clerkUserId = req.params.clerkUserId;
       if (!clerkUserId) {
-        throw new Error(400, "Clerk user ID is required");
+        throw new AppError(400, "Clerk user ID is required");
       }
 
       const user = await userService.getByClerkUserId(clerkUserId);
@@ -62,7 +62,7 @@ class UserController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const user = await userService.create(value);
@@ -82,7 +82,7 @@ class UserController {
       );
 
       if (bodyError) {
-        throw new Error(
+        throw new AppError(
           400,
           bodyError.details.map((d) => d.message).join(", ")
         );

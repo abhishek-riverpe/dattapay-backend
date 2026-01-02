@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/Error";
 import type { AuthRequest } from "../middlewares/auth";
 import walletService from "../services/wallet.service";
 import {
@@ -28,7 +28,7 @@ class WalletController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const wallet = await walletService.submitWallet(req.user.id, value.payloadId, value.signature);
@@ -57,7 +57,7 @@ class WalletController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const account = await walletService.submitAccount(req.user.id, value.payloadId, value.signature);
@@ -86,7 +86,7 @@ class WalletController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const result = await walletService.getTransactions(req.user.id, {
