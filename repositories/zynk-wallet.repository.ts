@@ -174,7 +174,7 @@ class ZynkWalletRepository {
   ): Promise<RegisterAuthResponse> {
     try {
       const response = await zynkClient.post<RegisterAuthResponse>(
-        `/api/v1/wallets/${entityId}/register-auth`,
+        `/api/v1/wallets/${encodeURIComponent(entityId)}/register-auth`,
         {
           authType: "Email_Auth",
           authPayload: {
@@ -198,7 +198,7 @@ class ZynkWalletRepository {
   ): Promise<PrepareWalletResponse> {
     try {
       const response = await zynkClient.post<PrepareWalletResponse>(
-        `/api/v1/wallets/${entityId}/create/prepare`,
+        `/api/v1/wallets/${encodeURIComponent(entityId)}/create/prepare`,
         data
       );
       return response.data;
@@ -236,7 +236,7 @@ class ZynkWalletRepository {
   ): Promise<PrepareAccountResponse> {
     try {
       const response = await zynkClient.post<PrepareAccountResponse>(
-        `/api/v1/wallets/${walletId}/accounts/prepare`,
+        `/api/v1/wallets/${encodeURIComponent(walletId)}/accounts/prepare`,
         data
       );
       return response.data;
@@ -272,7 +272,7 @@ class ZynkWalletRepository {
   async getWallet(walletId: string): Promise<GetWalletResponse> {
     try {
       const response = await zynkClient.get<GetWalletResponse>(
-        `/api/v1/wallets/${walletId}`
+        `/api/v1/wallets/${encodeURIComponent(walletId)}`
       );
       return response.data;
     } catch (error) {
@@ -289,7 +289,7 @@ class ZynkWalletRepository {
   async getBalances(walletId: string): Promise<GetBalancesResponse> {
     try {
       const response = await zynkClient.get<GetBalancesResponse>(
-        `/api/v1/wallets/${walletId}/balances`
+        `/api/v1/wallets/${encodeURIComponent(walletId)}/balances`
       );
       return response.data;
     } catch (error) {
@@ -314,7 +314,7 @@ class ZynkWalletRepository {
       if (options?.offset) params.append("offset", options.offset.toString());
 
       const queryString = params.toString();
-      const url = `/api/v1/wallets/${walletId}/${address}/transactions${
+      const url = `/api/v1/wallets/${encodeURIComponent(walletId)}/${encodeURIComponent(address)}/transactions${
         queryString ? `?${queryString}` : ""
       }`;
 
