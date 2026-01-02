@@ -48,6 +48,14 @@ function verifyJwt(
     // Parse payload
     const decodedPayload = JSON.parse(base64UrlDecode(payload));
 
+    // Validate expiration if present
+    if (decodedPayload.exp && typeof decodedPayload.exp === "number") {
+      const expirationTime = decodedPayload.exp * 1000; // Convert to milliseconds
+      if (Date.now() >= expirationTime) {
+        return { valid: false }; // Token has expired
+      }
+    }
+
     return { valid: true, payload: decodedPayload };
   } catch {
     return { valid: false };
