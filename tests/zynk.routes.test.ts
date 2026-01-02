@@ -203,65 +203,13 @@ describe("Zynk Routes", () => {
     },
   ];
 
-  const noEntityCases: EndpointCase[] = [
-    {
-      method: "post",
-      endpoint: "/api/zynk/kyc",
-      mockFn: () => mockStartKyc,
-      name: "kyc",
-    },
-    {
-      method: "get",
-      endpoint: "/api/zynk/kyc/status",
-      mockFn: () => mockGetKycStatus,
-      name: "kyc/status",
-    },
-    {
-      method: "post",
-      endpoint: "/api/zynk/funding-account",
-      mockFn: () => mockCreateFundingAccount,
-      name: "funding-account POST",
-    },
-    {
-      method: "get",
-      endpoint: "/api/zynk/funding-account",
-      mockFn: () => mockGetFundingAccount,
-      name: "funding-account GET",
-    },
-    {
-      method: "post",
-      endpoint: "/api/zynk/funding-account/activate",
-      mockFn: () => mockActivateFundingAccount,
-      name: "activate",
-    },
-    {
-      method: "post",
-      endpoint: "/api/zynk/funding-account/deactivate",
-      mockFn: () => mockDeactivateFundingAccount,
-      name: "deactivate",
-    },
-  ];
+  // Derive subset from commonErrorCases (excludes "entities" endpoint)
+  const noEntityCases = commonErrorCases.filter((c) => c.name !== "entities");
 
-  const noFundingCases: EndpointCase[] = [
-    {
-      method: "get",
-      endpoint: "/api/zynk/funding-account",
-      mockFn: () => mockGetFundingAccount,
-      name: "funding-account GET",
-    },
-    {
-      method: "post",
-      endpoint: "/api/zynk/funding-account/activate",
-      mockFn: () => mockActivateFundingAccount,
-      name: "activate",
-    },
-    {
-      method: "post",
-      endpoint: "/api/zynk/funding-account/deactivate",
-      mockFn: () => mockDeactivateFundingAccount,
-      name: "deactivate",
-    },
-  ];
+  // Derive subset for funding account operations
+  const noFundingCases = commonErrorCases.filter((c) =>
+    ["funding-account GET", "activate", "deactivate"].includes(c.name)
+  );
 
   runErrorSuite(
     "$name - Common Errors",

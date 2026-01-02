@@ -1,7 +1,5 @@
-import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
-import zynkClient from "../lib/zynk-client";
-import AppError from "../lib/AppError";
+import zynkClient, { handleZynkError } from "../lib/zynk-client";
 
 // ============================================
 // Input Types
@@ -28,15 +26,6 @@ interface ZynkTeleportResponse {
   data: {
     message: string;
     teleportId: string;
-  };
-}
-
-interface ZynkErrorResponse {
-  success: false;
-  error: {
-    code: number;
-    message: string;
-    details: string;
   };
 }
 
@@ -114,22 +103,7 @@ class TeleportRepository {
       );
       return response.data;
     } catch (error) {
-      if (error instanceof AxiosError && error.response) {
-        const zynkError = error.response.data as ZynkErrorResponse;
-
-        if (zynkError?.error) {
-          const errorMessage =
-            zynkError.error.details || zynkError.error.message;
-          throw new AppError(zynkError.error.code, errorMessage);
-        }
-
-        throw new AppError(
-          error.response.status,
-          "Failed to create teleport in Zynk"
-        );
-      }
-
-      throw new AppError(500, "Failed to connect to Zynk API");
+      handleZynkError(error, "Failed to create teleport in Zynk");
     }
   }
 }
