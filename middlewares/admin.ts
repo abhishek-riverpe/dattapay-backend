@@ -58,8 +58,11 @@ export default function admin(req: Request, res: Response, next: NextFunction) {
   const token = req.header("x-api-token");
   if (!token) throw new AppError(403, "Access denied. No token provided.");
 
-  // In test environment, perform lightweight checks to avoid real crypto verification
-  if (process.env.NODE_ENV === "test") {
+  // SECURITY: Never allow test bypass in production, even if misconfigured
+  if (process.env.NODE_ENV === "production") {
+    // Fall through to real verification below
+  } else if (process.env.NODE_ENV === "test") {
+    // In test environment, perform lightweight checks to avoid real crypto verification
     if (token === "invalid-token") {
       throw new AppError(403, "Invalid or expired token.");
     }

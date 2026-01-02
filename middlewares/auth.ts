@@ -17,8 +17,9 @@ export default async function auth(
   if (!token) throw new AppError(401, "Access denied. No token provided.");
 
   try {
+    // SECURITY: Never allow test bypass in production, even if misconfigured
     // For tests, skip external verification but keep behaviour checks
-    if (process.env.NODE_ENV === "test") {
+    if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV === "test") {
       if (token === "invalid-token" || token.toLowerCase().includes("invalid")) {
         throw new AppError(401, "Invalid or expired token.");
       }
