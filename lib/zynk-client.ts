@@ -3,6 +3,7 @@ import axios from "axios";
 const zynkClient = axios.create({
   baseURL: process.env.ZYNK_API_BASE_URL,
   withCredentials: true,
+  timeout: 30000, // 30 second timeout to prevent hung requests
 });
 
 zynkClient.interceptors.request.use(async (config) => {
