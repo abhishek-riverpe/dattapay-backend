@@ -8,7 +8,13 @@
       "Bash(bunx prisma migrate:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run test)",
+      "Bash(bun run test:*)",
+      "Bash(bun run:*)",
+      "Bash(NODE_OPTIONS=\"--experimental-vm-modules\" npx jest:*)",
+      "Bash(wc:*)"
     ]
   }
 }
