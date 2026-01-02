@@ -14,7 +14,7 @@ const error = (
   res: ExpressResponse,
   next: NextFunction
 ) => {
-  if (err instanceof AppError)
+  if (err instanceof AppError) {
     return res.status(err.status).send(new APIResponse(false, err.message));
   }
 

@@ -386,7 +386,8 @@ describe("External Accounts Routes", () => {
       {
         desc: "special characters in wallet address",
         payload: {
-          walletAddress: "0xABCDEF1234567890abcdef1234567890ABCDEF12",
+          // Use EIP-55 checksummed address for valid mixed-case
+          walletAddress: "0xabCDEF1234567890ABcDEF1234567890aBCDeF12",
           label: "Mixed Case Wallet",
         },
       },

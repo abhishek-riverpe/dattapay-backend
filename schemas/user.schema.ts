@@ -31,9 +31,15 @@ export const createUserSchema = Joi.object({
     "any.required": "Email is required",
   }),
 
-  phoneNumberPrefix: Joi.string().required().messages({
-    "string.empty": "Phone number prefix cannot be empty",
-  }),
+  phoneNumberPrefix: Joi.string()
+    .pattern(/^\+[1-9]\d{0,3}$/)
+    .required()
+    .messages({
+      "string.empty": "Phone number prefix cannot be empty",
+      "string.pattern.base":
+        "Phone number prefix must start with + followed by 1-4 digits",
+      "any.required": "Phone number prefix is required",
+    }),
 
   phoneNumber: Joi.string()
     .pattern(/^\d{4,15}$/)

@@ -32,15 +32,14 @@ export const createExternalAccountSchema = Joi.object({
     .custom((value, helpers) => {
       const { chain } = helpers.state.ancestors[0];
 
-      if (chain === "ethereum") {
-        if (!validateEthereumAddress(value)) {
-          return helpers.error("any.invalid");
-        }
-      }
-
       if (chain === "solana") {
         if (!validateSolanaAddress(value)) {
-          return helpers.error("any.invalid");
+          return helpers.error("any.invalid.solana");
+        }
+      } else {
+        // Default to Ethereum validation when chain is not specified or is 'ethereum'
+        if (!validateEthereumAddress(value)) {
+          return helpers.error("any.invalid.ethereum");
         }
       }
 
@@ -48,7 +47,8 @@ export const createExternalAccountSchema = Joi.object({
     })
     .messages({
       "string.empty": "Wallet address cannot be empty",
-      "any.invalid": "Wallet address is not valid for the selected chain",
+      "any.invalid.ethereum": "Please provide a valid Ethereum address",
+      "any.invalid.solana": "Please provide a valid Solana address",
       "any.required": "Wallet address is required",
     }),
 

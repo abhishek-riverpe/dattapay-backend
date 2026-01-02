@@ -15,7 +15,8 @@
       "Bash(bun run:*)",
       "Bash(NODE_OPTIONS=\"--experimental-vm-modules\" npx jest:*)",
       "Bash(wc:*)",
-      "Bash(NODE_OPTIONS='--experimental-vm-modules' npx jest:*)"
+      "Bash(NODE_OPTIONS='--experimental-vm-modules' npx jest:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
