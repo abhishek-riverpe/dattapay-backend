@@ -31,14 +31,9 @@ export const createUserSchema = Joi.object({
     "any.required": "Email is required",
   }),
 
-  phoneNumberPrefix: Joi.string()
-    .pattern(/^\+[1-9]\d{0,3}$/)
-    .required()
-    .messages({
-      "string.empty": "Phone number prefix cannot be empty",
-      "string.pattern.base": "Phone number prefix must start with + followed by 1-4 digits (e.g., +1, +44, +91)",
-      "any.required": "Phone number prefix is required",
-    }),
+  phoneNumberPrefix: Joi.string().required().messages({
+    "string.empty": "Phone number prefix cannot be empty",
+  }),
 
   phoneNumber: Joi.string()
     .pattern(/^\d{4,15}$/)
@@ -83,7 +78,8 @@ export const updateUserSchema = Joi.object({
     .pattern(/^\+[1-9]\d{0,3}$/)
     .messages({
       "string.empty": "Phone number prefix cannot be empty",
-      "string.pattern.base": "Phone number prefix must start with + followed by 1-4 digits (e.g., +1, +44, +91)",
+      "string.pattern.base":
+        "Phone number prefix must start with + followed by 1-4 digits (e.g., +1, +44, +91)",
     }),
 
   phoneNumber: Joi.string()
@@ -133,7 +129,9 @@ export type CreateUserInput = {
 type AuthCriticalFields = "clerkUserId" | "publicKey";
 
 // Public API type - explicitly excludes auth-critical fields that could allow account takeover
-export type UpdateUserInput = Partial<Omit<CreateUserInput, AuthCriticalFields>>;
+export type UpdateUserInput = Partial<
+  Omit<CreateUserInput, AuthCriticalFields>
+>;
 
 // Internal type for server-side updates (includes all fields for internal use only)
 export type InternalUpdateUserInput = Partial<CreateUserInput> & {
