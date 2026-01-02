@@ -362,8 +362,8 @@ describe("User Routes", () => {
         {
           field: "phoneNumberPrefix",
           value: "+12345",
-          message: "cannot exceed 5 characters",
-          desc: "phoneNumberPrefix exceeds max length",
+          message: "Phone number prefix must start with + followed by 1-4 digits",
+          desc: "phoneNumberPrefix has invalid format",
         },
       ])("should return 400 when $desc", async ({ field, value, message }) => {
         const payload = { ...validCreateUserPayload, [field]: value };

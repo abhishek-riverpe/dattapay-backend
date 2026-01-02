@@ -1,15 +1,56 @@
 import Joi from "joi";
+import { isAddress } from "ethers";
+import { PublicKey } from "@solana/web3.js";
 
 // ============================================
 // Create External Account Schema
 // ============================================
 
+// Ethereum address pattern: 0x followed by 40 hex characters
+
+const validateEthereumAddress = (address: string) => {
+  return isAddress(address);
+};
+
+const validateSolanaAddress = (address: string) => {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const createExternalAccountSchema = Joi.object({
-  walletAddress: Joi.string().min(1).max(255).required().messages({
-    "string.empty": "Wallet address cannot be empty",
-    "string.max": "Wallet address cannot exceed 255 characters",
-    "any.required": "Wallet address is required",
+  chain: Joi.string().valid("ethereum", "solana").messages({
+    "any.only": "Chain must be either 'ethereum' or 'solana'",
+    "string.empty": "Chain cannot be empty",
   }),
+
+  walletAddress: Joi.string()
+    .required()
+    .custom((value, helpers) => {
+      const { chain } = helpers.state.ancestors[0];
+
+      if (chain === "ethereum") {
+        if (!validateEthereumAddress(value)) {
+          return helpers.error("any.invalid");
+        }
+      }
+
+      if (chain === "solana") {
+        if (!validateSolanaAddress(value)) {
+          return helpers.error("any.invalid");
+        }
+      }
+
+      return value;
+    })
+    .messages({
+      "string.empty": "Wallet address cannot be empty",
+      "any.invalid": "Wallet address is not valid for the selected chain",
+      "any.required": "Wallet address is required",
+    }),
 
   label: Joi.string().min(1).max(100).optional().messages({
     "string.empty": "Label cannot be empty",

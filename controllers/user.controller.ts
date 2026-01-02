@@ -59,6 +59,7 @@ class UserController {
     try {
       const { error, value } = createUserSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -78,7 +79,7 @@ class UserController {
     try {
       const { error: bodyError, value: bodyValue } = updateUserSchema.validate(
         req.body,
-        { abortEarly: false }
+        { abortEarly: false, stripUnknown: true }
       );
 
       if (bodyError) {

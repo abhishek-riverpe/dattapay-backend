@@ -26,6 +26,7 @@ class AddressController {
         { ...req.body, userId: req.user.id },
         {
           abortEarly: false,
+          stripUnknown: true,
         }
       );
 
@@ -45,7 +46,7 @@ class AddressController {
   async updateByUserId(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { error: bodyError, value: bodyValue } =
-        updateAddressSchema.validate(req.body, { abortEarly: false });
+        updateAddressSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
 
       if (bodyError) {
         throw new AppError(

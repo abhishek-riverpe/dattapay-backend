@@ -1,10 +1,15 @@
-class AppError {
+class AppError extends Error {
   status: number;
-  message: string;
 
   constructor(status: number, message: string) {
-    this.message = message;
+    super(message);
     this.status = status;
+    this.name = "AppError";
+
+    // Maintains proper stack trace for where the error was thrown
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, AppError);
+    }
   }
 }
 

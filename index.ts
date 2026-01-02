@@ -13,6 +13,34 @@ import webhooks from "./routes/webhook.routes";
 
 dotenv.config();
 
+// Validate required environment variables at startup
+const REQUIRED_ENV_VARS = [
+  "DATABASE_URL",
+  "ADMIN_TOKEN_SECRET",
+  "CLERK_PUBLISHABLE_KEY",
+  "CLERK_SECRET_KEY",
+  "ZYNK_API_KEY",
+  "ZYNK_BASE_URL",
+  "ZYNK_WEBHOOK_SECRET",
+  "ZYNK_ROUTING_ID",
+  "ZYNK_JURISDICTION_ID",
+] as const;
+
+// Only validate in production - development can run with partial config
+if (process.env.NODE_ENV === "production") {
+  const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+  if (missingVars.length > 0) {
+    logger.error(`Missing required environment variables: ${missingVars.join(", ")}`);
+    process.exit(1);
+  }
+} else if (process.env.NODE_ENV !== "test") {
+  // Warn in development but don't exit
+  const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+  if (missingVars.length > 0) {
+    logger.warn(`Missing environment variables (required in production): ${missingVars.join(", ")}`);
+  }
+}
+
 const app = express();
 
 app.use(
@@ -109,8 +137,9 @@ const webhookRateLimiter = rateLimit({
   message: { success: false, message: "Too many webhook requests. Please try again later." },
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Request body size limits to prevent DoS attacks
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Apply stricter rate limits to financial endpoints
 app.use("/api/transfer", financialRateLimiter);
@@ -119,6 +148,14 @@ app.use("/api/external-accounts", externalAccountsRateLimiter);
 
 // Apply webhook rate limiter before webhook routes
 app.use("/api/webhook", webhookRateLimiter);
+
+// Health check endpoint (no auth required)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.use("/api", webhooks);
 app.use("/api", admin, router);

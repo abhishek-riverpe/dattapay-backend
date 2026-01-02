@@ -21,6 +21,10 @@ function base64UrlEncode(buffer: Buffer): string {
   return encoded;
 }
 
+// Expected JWT configuration
+const EXPECTED_ALGORITHM = "HS256";
+const EXPECTED_ISSUER = process.env.JWT_ISSUER || "dattapay";
+
 function verifyJwt(
   token: string,
   secret: string
@@ -30,6 +34,14 @@ function verifyJwt(
     if (parts.length !== 3) return { valid: false };
 
     const [header, payload, signature] = parts as [string, string, string];
+
+    // Parse and verify header
+    const decodedHeader = JSON.parse(base64UrlDecode(header));
+
+    // Verify algorithm to prevent algorithm confusion attacks
+    if (decodedHeader.alg !== EXPECTED_ALGORITHM) {
+      return { valid: false };
+    }
 
     // Verify signature
     const signatureInput = `${header}.${payload}`;
@@ -48,12 +60,26 @@ function verifyJwt(
     // Parse payload
     const decodedPayload = JSON.parse(base64UrlDecode(payload));
 
-    // Validate expiration if present
+    // Validate expiration (exp claim)
     if (decodedPayload.exp && typeof decodedPayload.exp === "number") {
-      const expirationTime = decodedPayload.exp * 1000; // Convert to milliseconds
+      const expirationTime = decodedPayload.exp * 1000;
       if (Date.now() >= expirationTime) {
-        return { valid: false }; // Token has expired
+        return { valid: false };
       }
+    }
+
+    // Validate issued at (iat claim) - reject tokens issued in the future
+    if (decodedPayload.iat && typeof decodedPayload.iat === "number") {
+      const issuedAt = decodedPayload.iat * 1000;
+      // Allow 5 minutes clock skew
+      if (issuedAt > Date.now() + 5 * 60 * 1000) {
+        return { valid: false };
+      }
+    }
+
+    // Validate issuer (iss claim) if present
+    if (decodedPayload.iss && decodedPayload.iss !== EXPECTED_ISSUER) {
+      return { valid: false };
     }
 
     return { valid: true, payload: decodedPayload };
