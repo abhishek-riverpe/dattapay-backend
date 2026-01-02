@@ -1,6 +1,14 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
 import AppError from "../lib/AppError";
+import {
+  validateZynkResponse,
+  zynkEntityResponseSchema,
+  zynkKycResponseSchema,
+  zynkKycStatusResponseSchema,
+  zynkCreateFundingAccountResponseSchema,
+  zynkGetFundingAccountResponseSchema,
+} from "../schemas/zynk-response.schema";
 
 interface ZynkEntityData {
   type: string;
@@ -141,8 +149,13 @@ class ZynkRepository {
         "/api/v1/transformer/entity/create",
         data
       );
-      return response.data;
+      return validateZynkResponse<ZynkEntityResponse>(
+        response.data,
+        zynkEntityResponseSchema,
+        "Failed to create entity"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 
@@ -172,8 +185,13 @@ class ZynkRepository {
           entityId
         )}/${routingId}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkKycResponse>(
+        response.data,
+        zynkKycResponseSchema,
+        "Failed to start KYC"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         if (error.response.status === 404) {
           throw new AppError(404, "Entity not found in Zynk");
@@ -199,8 +217,13 @@ class ZynkRepository {
       const response = await zynkClient.get<ZynkKycStatusResponse>(
         `/api/v1/transformer/entity/kyc/${encodeURIComponent(entityId)}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkKycStatusResponse>(
+        response.data,
+        zynkKycStatusResponseSchema,
+        "Failed to get KYC status"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 
@@ -232,8 +255,13 @@ class ZynkRepository {
           entityId
         )}/create/funding_account/${jurisdictionId}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkCreateFundingAccountResponse>(
+        response.data,
+        zynkCreateFundingAccountResponseSchema,
+        "Failed to create funding account"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 
@@ -263,8 +291,13 @@ class ZynkRepository {
           entityId
         )}/funding_account/${encodeURIComponent(accountId)}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkGetFundingAccountResponse>(
+        response.data,
+        zynkGetFundingAccountResponseSchema,
+        "Failed to get funding account"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 
@@ -294,8 +327,13 @@ class ZynkRepository {
           entityId
         )}/activate/funding_account/${encodeURIComponent(accountId)}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkCreateFundingAccountResponse>(
+        response.data,
+        zynkCreateFundingAccountResponseSchema,
+        "Failed to activate funding account"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 
@@ -325,8 +363,13 @@ class ZynkRepository {
           entityId
         )}/deactivate/funding_account/${encodeURIComponent(accountId)}`
       );
-      return response.data;
+      return validateZynkResponse<ZynkCreateFundingAccountResponse>(
+        response.data,
+        zynkCreateFundingAccountResponseSchema,
+        "Failed to deactivate funding account"
+      );
     } catch (error) {
+      if (error instanceof AppError) throw error;
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
 

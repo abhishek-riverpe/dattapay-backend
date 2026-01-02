@@ -5,31 +5,42 @@ import APIResponse from "../lib/APIResponse";
 import AppError from "../lib/AppError";
 import userRepository from "../repositories/user.repository";
 import zynkService from "../services/zynk.service";
+import { kycEventSchema, type KYCEvent } from "../schemas/webhook.schema";
 
 const router = express.Router();
 
-type KYCEvent = {
-  eventCategory: "kyc" | "transfer";
-  eventType: "transitioned";
-  eventStatus: "approved";
-  eventObject: {
-    entityId: string;
-    routingId: string;
-    status: "approved";
-    routingEnabled: boolean;
-  };
+// Maximum age for webhook timestamps (5 minutes)
+const WEBHOOK_TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
+
+type WebhookVerificationResult = {
+  valid: boolean;
+  error?: "invalid_format" | "expired" | "invalid_signature";
 };
 
 function verifyWebhookSignature(
   payload: object,
   signatureHeader: string,
   secret: string
-): boolean {
+): WebhookVerificationResult {
   const match = /^(\d+):(.+)$/.exec(signatureHeader);
-  if (!match?.[1] || !match?.[2]) return false;
+  if (!match?.[1] || !match?.[2]) {
+    return { valid: false, error: "invalid_format" };
+  }
 
   const timestamp = match[1];
   const signature = match[2];
+
+  // Check timestamp freshness to prevent replay attacks
+  const timestampMs = Number.parseInt(timestamp, 10);
+  if (Number.isNaN(timestampMs)) {
+    return { valid: false, error: "invalid_format" };
+  }
+
+  const age = Date.now() - timestampMs;
+  if (age > WEBHOOK_TIMESTAMP_TOLERANCE_MS || age < -WEBHOOK_TIMESTAMP_TOLERANCE_MS) {
+    return { valid: false, error: "expired" };
+  }
+
   const body = JSON.stringify({ ...payload, signedAt: timestamp });
   const expectedSignature = crypto
     .createHmac("sha256", secret)
@@ -37,12 +48,13 @@ function verifyWebhookSignature(
     .digest("base64");
 
   try {
-    return crypto.timingSafeEqual(
+    const isValid = crypto.timingSafeEqual(
       Buffer.from(signature, "base64"),
       Buffer.from(expectedSignature, "base64")
     );
+    return isValid ? { valid: true } : { valid: false, error: "invalid_signature" };
   } catch {
-    return false;
+    return { valid: false, error: "invalid_signature" };
   }
 }
 
@@ -61,11 +73,27 @@ router.post(
         throw new AppError(401, "Missing webhook signature");
       }
 
-      if (!verifyWebhookSignature(req.body, signatureHeader, secret)) {
-        throw new AppError(401, "Invalid webhook signature");
+      const verification = verifyWebhookSignature(req.body, signatureHeader, secret);
+      if (!verification.valid) {
+        const errorMessages: Record<NonNullable<typeof verification.error>, string> = {
+          invalid_format: "Invalid webhook signature format",
+          expired: "Webhook signature has expired",
+          invalid_signature: "Invalid webhook signature",
+        };
+        throw new AppError(401, errorMessages[verification.error!]);
       }
 
-      const body: KYCEvent = req.body;
+      // Validate webhook payload to prevent prototype pollution and type confusion
+      const { error, value } = kycEventSchema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      if (error) {
+        throw new AppError(400, `Invalid webhook payload: ${error.details.map((d) => d.message).join(", ")}`);
+      }
+
+      const body: KYCEvent = value;
       if (body.eventCategory !== "kyc") {
         return res.status(200).send(new APIResponse(true, "Event ignored"));
       }

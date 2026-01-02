@@ -140,12 +140,12 @@ describe("External Accounts Routes", () => {
         },
         {
           payload: invalidPayloads.longAddress,
-          message: "Wallet address cannot exceed 255 characters",
-          desc: "walletAddress exceeds max length",
+          message: "valid Ethereum address",
+          desc: "walletAddress is invalid format",
         },
         {
           payload: {
-            walletAddress: "0x1234567890abcdef",
+            walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
             label: "a".repeat(101),
           },
           message: "Label cannot exceed 100 characters",

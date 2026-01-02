@@ -13,6 +13,7 @@ class ExternalAccountsController {
     try {
       const { error, value } = createExternalAccountSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -60,6 +61,7 @@ class ExternalAccountsController {
     try {
       const { error, value } = externalAccountIdSchema.validate(req.params, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -89,6 +91,7 @@ class ExternalAccountsController {
     try {
       const { error, value } = externalAccountIdSchema.validate(req.params, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {

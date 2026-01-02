@@ -13,6 +13,7 @@ class TeleportController {
     try {
       const { error, value } = createTeleportSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -47,6 +48,7 @@ class TeleportController {
     try {
       const { error, value } = updateTeleportSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {

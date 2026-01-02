@@ -117,13 +117,17 @@ export type CreateUserInput = {
   dateOfBirth: Date;
 };
 
-// Public API type - excludes sensitive fields that should only be updated server-side
-export type UpdateUserInput = Partial<CreateUserInput>;
+// Auth-critical fields that should NEVER be updatable via public API
+type AuthCriticalFields = "clerkUserId" | "publicKey";
 
-// Internal type for server-side updates (includes sensitive fields)
+// Public API type - explicitly excludes auth-critical fields that could allow account takeover
+export type UpdateUserInput = Partial<Omit<CreateUserInput, AuthCriticalFields>>;
+
+// Internal type for server-side updates (includes all fields for internal use only)
 export type InternalUpdateUserInput = Partial<CreateUserInput> & {
   zynkEntityId?: string;
   accountStatus?: AccountStatus;
+  zynkFundingAccountId?: string;
 };
 
 export type UserIdParam = {

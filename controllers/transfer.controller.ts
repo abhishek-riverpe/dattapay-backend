@@ -13,6 +13,7 @@ class TransferController {
     try {
       const { error, value } = simulateTransferSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -33,6 +34,7 @@ class TransferController {
     try {
       const { error, value } = transferSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {

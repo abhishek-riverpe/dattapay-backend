@@ -30,6 +30,7 @@ class WalletController {
     try {
       const { error, value } = submitWalletSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -71,6 +72,7 @@ class WalletController {
     try {
       const { error, value } = submitWalletSchema.validate(req.body, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {
@@ -106,6 +108,7 @@ class WalletController {
     try {
       const { error, value } = getTransactionsQuerySchema.validate(req.query, {
         abortEarly: false,
+        stripUnknown: true,
       });
 
       if (error) {

@@ -4,12 +4,18 @@ import Joi from "joi";
 // Create External Account Schema
 // ============================================
 
+// Ethereum address pattern: 0x followed by 40 hex characters
+const ETHEREUM_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+
 export const createExternalAccountSchema = Joi.object({
-  walletAddress: Joi.string().min(1).max(255).required().messages({
-    "string.empty": "Wallet address cannot be empty",
-    "string.max": "Wallet address cannot exceed 255 characters",
-    "any.required": "Wallet address is required",
-  }),
+  walletAddress: Joi.string()
+    .pattern(ETHEREUM_ADDRESS_PATTERN)
+    .required()
+    .messages({
+      "string.empty": "Wallet address cannot be empty",
+      "string.pattern.base": "Wallet address must be a valid Ethereum address (0x followed by 40 hex characters)",
+      "any.required": "Wallet address is required",
+    }),
 
   label: Joi.string().min(1).max(100).optional().messages({
     "string.empty": "Label cannot be empty",
