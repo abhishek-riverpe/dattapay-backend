@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
 import zynkClient from "../lib/zynk-client";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 // ============================================
 // Input Types

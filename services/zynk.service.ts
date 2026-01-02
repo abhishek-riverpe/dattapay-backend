@@ -1,4 +1,4 @@
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import zynkRepository from "../repositories/zynk.repository";
@@ -13,7 +13,10 @@ class ZynkService {
     }
 
     if (!user.address) {
-      throw new AppError(400, "User must have an address to create a Zynk entity");
+      throw new AppError(
+        400,
+        "User must have an address to create a Zynk entity"
+      );
     }
 
     if (!user.publicKey) {
@@ -68,7 +71,10 @@ class ZynkService {
       });
     });
 
-    await zynkRepository.registerPrimaryAuth(response.data.entityId, user.publicKey);
+    await zynkRepository.registerPrimaryAuth(
+      response.data.entityId,
+      user.publicKey
+    );
     return updatedUser;
   }
 
@@ -246,17 +252,22 @@ class ZynkService {
     }
 
     if (!user.zynkEntityId) {
-      throw new AppError(400, "User does not have a Zynk entity. Create entity first.");
+      throw new AppError(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (!user.publicKey) {
       throw new AppError(400, "User does not have a public key");
     }
-  
-    const response = await zynkRepository.registerPrimaryAuth(user.zynkEntityId, user.publicKey);
+
+    const response = await zynkRepository.registerPrimaryAuth(
+      user.zynkEntityId,
+      user.publicKey
+    );
     return response;
   }
-
 }
 
 export default new ZynkService();

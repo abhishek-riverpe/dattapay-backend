@@ -1,4 +1,4 @@
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";

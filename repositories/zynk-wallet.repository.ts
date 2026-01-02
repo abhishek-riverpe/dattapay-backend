@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 // ============================================
 // Request/Response Interfaces
@@ -154,8 +154,7 @@ class ZynkWalletRepository {
       const zynkError = error.response.data as ZynkErrorResponse;
 
       if (zynkError?.error) {
-        const errorMessage =
-          zynkError.error.details || zynkError.error.message;
+        const errorMessage = zynkError.error.details || zynkError.error.message;
         throw new AppError(zynkError.error.code, errorMessage);
       }
 
@@ -169,15 +168,18 @@ class ZynkWalletRepository {
    * Register email-based authentication with Zynk
    * This automatically initiates OTP
    */
-  async registerAuth(entityId: string, email: string): Promise<RegisterAuthResponse> {
+  async registerAuth(
+    entityId: string,
+    email: string
+  ): Promise<RegisterAuthResponse> {
     try {
       const response = await zynkClient.post<RegisterAuthResponse>(
         `/api/v1/wallets/${entityId}/register-auth`,
         {
           authType: "Email_Auth",
           authPayload: {
-            email: email
-          }
+            email: email,
+          },
         }
       );
       return response.data;
@@ -247,7 +249,9 @@ class ZynkWalletRepository {
    * Submit account creation with signature
    * POST /api/v1/wallets/accounts/submit
    */
-  async submitAccount(data: SubmitAccountRequest): Promise<SubmitAccountResponse> {
+  async submitAccount(
+    data: SubmitAccountRequest
+  ): Promise<SubmitAccountResponse> {
     try {
       const response = await zynkClient.post<SubmitAccountResponse>(
         `/api/v1/wallets/accounts/submit`,

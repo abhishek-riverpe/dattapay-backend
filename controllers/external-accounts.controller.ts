@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { AuthRequest } from "../middlewares/auth";
 import externalAccountsService from "../services/external-accounts.service";
 import {

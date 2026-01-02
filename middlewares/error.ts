@@ -4,7 +4,7 @@ import type {
   ErrorRequestHandler,
   NextFunction,
 } from "express";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import APIResponse from "../lib/APIResponse";
 
 const error = (

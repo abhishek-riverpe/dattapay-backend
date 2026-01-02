@@ -1,4 +1,11 @@
-import { jest, describe, it, expect, beforeEach, beforeAll } from "@jest/globals";
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeEach,
+  beforeAll,
+} from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
 import {
@@ -14,12 +21,13 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/address.fixtures";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { TestAppConfig } from "./helpers";
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetByUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockCreate = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUpdateByUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -165,11 +173,15 @@ describe("Address Routes", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe("Address retrieved successfully");
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.addressLine1).toBe(mockAddressWithUser.addressLine1);
+      expect(response.body.data.addressLine1).toBe(
+        mockAddressWithUser.addressLine1
+      );
     });
 
     it("should return 404 when address not found", async () => {
-      mockGetByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
+      mockGetByUserId.mockRejectedValue(
+        new AppError(404, "Address not found for this user")
+      );
 
       const response = await request(app)
         .get("/api/addresses")
@@ -403,7 +415,9 @@ describe("Address Routes", () => {
     });
 
     it("should return 409 when user already has an address", async () => {
-      mockCreate.mockRejectedValue(new AppError(409, "User already has an address"));
+      mockCreate.mockRejectedValue(
+        new AppError(409, "User already has an address")
+      );
 
       const response = await request(app)
         .post("/api/addresses")
@@ -517,7 +531,9 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when address not found", async () => {
-      mockUpdateByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
+      mockUpdateByUserId.mockRejectedValue(
+        new AppError(404, "Address not found for this user")
+      );
 
       const response = await request(app)
         .put("/api/addresses")
@@ -606,7 +622,9 @@ describe("Address Routes", () => {
     });
 
     it("should return 404 when address not found", async () => {
-      mockDeleteByUserId.mockRejectedValue(new AppError(404, "Address not found for this user"));
+      mockDeleteByUserId.mockRejectedValue(
+        new AppError(404, "Address not found for this user")
+      );
 
       const response = await request(app)
         .delete("/api/addresses")
@@ -668,7 +686,9 @@ describe("Address Routes", () => {
     });
 
     it("should return error response for internal server errors", async () => {
-      mockGetByUserId.mockRejectedValue(new Error("Database connection failed"));
+      mockGetByUserId.mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
       const response = await request(app)
         .get("/api/addresses")
@@ -689,7 +709,7 @@ describe("Address Routes", () => {
       const payload = {
         ...validCreateAddressPayload,
         addressLine1: "123 O'Brien Street, Apt #4",
-        addressLine2: "Building \"A\" & Co.",
+        addressLine2: 'Building "A" & Co.',
       };
 
       const response = await request(app)

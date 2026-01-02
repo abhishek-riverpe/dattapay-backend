@@ -1,4 +1,4 @@
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import walletRepository from "../repositories/wallet.repository";
@@ -6,7 +6,6 @@ import zynkWalletRepository from "../repositories/zynk-wallet.repository";
 import externalAccountsService from "./external-accounts.service";
 
 class WalletService {
-
   async prepareWallet(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
@@ -14,7 +13,10 @@ class WalletService {
     }
 
     if (!user.zynkEntityId) {
-      throw new AppError(400, "User must complete KYC before creating a wallet");
+      throw new AppError(
+        400,
+        "User must complete KYC before creating a wallet"
+      );
     }
 
     const existingWallet = await walletRepository.findWalletByUserId(userId);
@@ -24,10 +26,16 @@ class WalletService {
 
     const prepareWalletResponse = await zynkWalletRepository.prepareWallet(
       user.zynkEntityId,
-      { walletName: "My Wallet", chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA" }
+      {
+        walletName: "My Wallet",
+        chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA",
+      }
     );
 
-    if (!prepareWalletResponse.data.payloadId || !prepareWalletResponse.data.payloadToSign) {
+    if (
+      !prepareWalletResponse.data.payloadId ||
+      !prepareWalletResponse.data.payloadToSign
+    ) {
       throw new AppError(500, "Failed to prepare wallet creation");
     }
 
@@ -45,7 +53,10 @@ class WalletService {
     }
 
     if (!user.zynkEntityId) {
-      throw new AppError(400, "User must complete KYC before creating a wallet");
+      throw new AppError(
+        400,
+        "User must complete KYC before creating a wallet"
+      );
     }
 
     // Call external API first (cannot be rolled back)
@@ -54,7 +65,10 @@ class WalletService {
       signature,
     });
 
-    if (!submitWalletResponse.data.walletId || submitWalletResponse.data.addresses.length === 0) {
+    if (
+      !submitWalletResponse.data.walletId ||
+      submitWalletResponse.data.addresses.length === 0
+    ) {
       throw new AppError(500, "Wallet creation failed");
     }
 
@@ -83,7 +97,10 @@ class WalletService {
   async prepareAccount(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new AppError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     if (wallet.account) {
@@ -109,7 +126,10 @@ class WalletService {
     // Initial validation
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new AppError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     // Call external API first (cannot be rolled back)
@@ -168,7 +188,10 @@ class WalletService {
   async getWallet(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new AppError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     return wallet;
@@ -180,7 +203,10 @@ class WalletService {
   ) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new AppError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     if (!wallet.account) {

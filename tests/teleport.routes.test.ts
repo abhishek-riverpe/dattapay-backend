@@ -21,7 +21,7 @@ import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
 } from "./fixtures/teleport.fixtures";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { TestAppConfig } from "./helpers";
 import {
   createAdminMiddlewareTests,
@@ -33,7 +33,8 @@ import {
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockCreate = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUpdate = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -131,9 +132,21 @@ describe("Teleport Routes", () => {
     { method: "put" as const, name: "PUT" },
   ])("$name /api/teleport - Validation", ({ method }) => {
     it.each([
-      { payload: invalidPayloads.missingId, message: "External account ID is required", desc: "externalAccountId is missing" },
-      { payload: invalidPayloads.invalidUuid, message: "valid UUID", desc: "externalAccountId is not a valid UUID" },
-      { payload: invalidPayloads.emptyId, message: undefined, desc: "externalAccountId is empty" },
+      {
+        payload: invalidPayloads.missingId,
+        message: "External account ID is required",
+        desc: "externalAccountId is missing",
+      },
+      {
+        payload: invalidPayloads.invalidUuid,
+        message: "valid UUID",
+        desc: "externalAccountId is not a valid UUID",
+      },
+      {
+        payload: invalidPayloads.emptyId,
+        message: undefined,
+        desc: "externalAccountId is empty",
+      },
     ])("should return 400 when $desc", async ({ payload, message }) => {
       const response = await authRequest(method, "/api/teleport", payload);
       expectErrorResponse(response, 400, message);
@@ -145,31 +158,74 @@ describe("Teleport Routes", () => {
   // ==========================================
   describe("POST /api/teleport", () => {
     it.each([
-      { mockUser: mockUserWithoutZynkEntity, error: new AppError(400, "User must have a Zynk entity"), message: "Zynk entity", desc: "user does not have zynk entity" },
-      { mockUser: mockUserWithoutFundingAccount, error: new AppError(400, "User must have a funding account"), message: "funding account", desc: "user does not have funding account" },
-    ])("should return 400 when $desc", async ({ mockUser: user, error, message }) => {
-      mockGetByClerkUserId.mockResolvedValue(user);
-      mockCreate.mockRejectedValue(error);
+      {
+        mockUser: mockUserWithoutZynkEntity,
+        error: new AppError(400, "User must have a Zynk entity"),
+        message: "Zynk entity",
+        desc: "user does not have zynk entity",
+      },
+      {
+        mockUser: mockUserWithoutFundingAccount,
+        error: new AppError(400, "User must have a funding account"),
+        message: "funding account",
+        desc: "user does not have funding account",
+      },
+    ])(
+      "should return 400 when $desc",
+      async ({ mockUser: user, error, message }) => {
+        mockGetByClerkUserId.mockResolvedValue(user);
+        mockCreate.mockRejectedValue(error);
 
-      const response = await authRequest("post", "/api/teleport", validCreatePayload);
-      expectErrorResponse(response, 400, message);
-    });
+        const response = await authRequest(
+          "post",
+          "/api/teleport",
+          validCreatePayload
+        );
+        expectErrorResponse(response, 400, message);
+      }
+    );
 
     it.each([
-      { error: new AppError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
-      { error: new AppError(400, "External account not registered with Zynk"), status: 400, message: "not registered with Zynk", desc: "external account is not registered with Zynk" },
-      { error: new AppError(409, "User already has a teleport"), status: 409, message: "already has a teleport", desc: "user already has a teleport" },
-    ])("should return $status when $desc", async ({ error, status, message }) => {
-      mockCreate.mockRejectedValue(error);
+      {
+        error: new AppError(404, "External account not found"),
+        status: 404,
+        message: "External account not found",
+        desc: "external account is not found",
+      },
+      {
+        error: new AppError(400, "External account not registered with Zynk"),
+        status: 400,
+        message: "not registered with Zynk",
+        desc: "external account is not registered with Zynk",
+      },
+      {
+        error: new AppError(409, "User already has a teleport"),
+        status: 409,
+        message: "already has a teleport",
+        desc: "user already has a teleport",
+      },
+    ])(
+      "should return $status when $desc",
+      async ({ error, status, message }) => {
+        mockCreate.mockRejectedValue(error);
 
-      const response = await authRequest("post", "/api/teleport", validCreatePayload);
-      expectErrorResponse(response, status, message);
-    });
+        const response = await authRequest(
+          "post",
+          "/api/teleport",
+          validCreatePayload
+        );
+        expectErrorResponse(response, status, message);
+      }
+    );
 
     it("should return 201 when teleport is created successfully", async () => {
       mockCreate.mockResolvedValue(mockCreatedTeleport);
 
-      const response = await authRequest("post", "/api/teleport", validCreatePayload);
+      const response = await authRequest(
+        "post",
+        "/api/teleport",
+        validCreatePayload
+      );
 
       expectSuccessResponse(response, 201, "Teleport created successfully");
       expect(response.body.data).toBeDefined();
@@ -223,20 +279,46 @@ describe("Teleport Routes", () => {
   // ==========================================
   describe("PUT /api/teleport", () => {
     it.each([
-      { error: new AppError(400, "User must have a Zynk entity"), status: 400, message: "Zynk entity", desc: "user does not have zynk entity" },
-      { error: new AppError(404, "Teleport not found"), status: 404, message: "not found", desc: "teleport is not found" },
-      { error: new AppError(404, "External account not found"), status: 404, message: "External account not found", desc: "external account is not found" },
-    ])("should return $status when $desc", async ({ error, status, message }) => {
-      mockUpdate.mockRejectedValue(error);
+      {
+        error: new AppError(400, "User must have a Zynk entity"),
+        status: 400,
+        message: "Zynk entity",
+        desc: "user does not have zynk entity",
+      },
+      {
+        error: new AppError(404, "Teleport not found"),
+        status: 404,
+        message: "not found",
+        desc: "teleport is not found",
+      },
+      {
+        error: new AppError(404, "External account not found"),
+        status: 404,
+        message: "External account not found",
+        desc: "external account is not found",
+      },
+    ])(
+      "should return $status when $desc",
+      async ({ error, status, message }) => {
+        mockUpdate.mockRejectedValue(error);
 
-      const response = await authRequest("put", "/api/teleport", validUpdatePayload);
-      expectErrorResponse(response, status, message);
-    });
+        const response = await authRequest(
+          "put",
+          "/api/teleport",
+          validUpdatePayload
+        );
+        expectErrorResponse(response, status, message);
+      }
+    );
 
     it("should return 200 when teleport is updated successfully", async () => {
       mockUpdate.mockResolvedValue(mockUpdatedTeleport);
 
-      const response = await authRequest("put", "/api/teleport", validUpdatePayload);
+      const response = await authRequest(
+        "put",
+        "/api/teleport",
+        validUpdatePayload
+      );
 
       expectSuccessResponse(response, 200, "Teleport updated successfully");
       expect(response.body.data).toBeDefined();
@@ -265,7 +347,8 @@ describe("Teleport Routes", () => {
     adminToken: ADMIN_TOKEN,
     authToken: AUTH_TOKEN,
     setupSuccessMock: () => mockGet.mockResolvedValue(mockTeleport),
-    setupErrorMock: () => mockGet.mockRejectedValue(new Error("Database connection failed")),
+    setupErrorMock: () =>
+      mockGet.mockRejectedValue(new Error("Database connection failed")),
   });
 
   // ==========================================

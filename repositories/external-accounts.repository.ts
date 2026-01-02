@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
 import zynkClient from "../lib/zynk-client";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { ExternalAccountStatus } from "../generated/prisma/client";
 
 // ============================================
@@ -167,7 +167,9 @@ class ExternalAccountsRepository {
 
     try {
       const response = await zynkClient.post<ZynkExternalAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/add/external_account`,
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/add/external_account`,
         payload
       );
       return response.data;
@@ -197,7 +199,9 @@ class ExternalAccountsRepository {
   ): Promise<ZynkGetExternalAccountResponse> {
     try {
       const response = await zynkClient.get<ZynkGetExternalAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/external_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/external_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -226,7 +230,9 @@ class ExternalAccountsRepository {
   ): Promise<void> {
     try {
       await zynkClient.delete(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/delete/external_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/delete/external_account/${encodeURIComponent(accountId)}`
       );
     } catch (error) {
       if (error instanceof AxiosError && error.response) {

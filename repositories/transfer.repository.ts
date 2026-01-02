@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 // ============================================
 // Input Types
@@ -70,7 +70,9 @@ interface ZynkErrorResponse {
 // ============================================
 
 class TransferRepository {
-  async simulateTransfer(data: SimulateTransferInput): Promise<ZynkSimulateResponse> {
+  async simulateTransfer(
+    data: SimulateTransferInput
+  ): Promise<ZynkSimulateResponse> {
     const payload: Record<string, unknown> = {
       transactionId: data.transactionId,
       fromEntityId: data.fromEntityId,
@@ -100,18 +102,24 @@ class TransferRepository {
         const zynkError = error.response.data as ZynkErrorResponse;
 
         if (zynkError?.error) {
-          const errorMessage = zynkError.error.details || zynkError.error.message;
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
           throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new AppError(error.response.status, "Failed to simulate transfer");
+        throw new AppError(
+          error.response.status,
+          "Failed to simulate transfer"
+        );
       }
 
       throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
-  async executeTransfer(data: ExecuteTransferInput): Promise<ZynkTransferResponse> {
+  async executeTransfer(
+    data: ExecuteTransferInput
+  ): Promise<ZynkTransferResponse> {
     const payload = {
       executionId: data.executionId,
       payloadSignature: data.payloadSignature,
@@ -130,7 +138,8 @@ class TransferRepository {
         const zynkError = error.response.data as ZynkErrorResponse;
 
         if (zynkError?.error) {
-          const errorMessage = zynkError.error.details || zynkError.error.message;
+          const errorMessage =
+            zynkError.error.details || zynkError.error.message;
           throw new AppError(zynkError.error.code, errorMessage);
         }
 

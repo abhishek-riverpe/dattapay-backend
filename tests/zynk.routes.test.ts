@@ -8,7 +8,7 @@ import {
 } from "@jest/globals";
 import type { Express, Router } from "express";
 import request from "supertest";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import {
   ADMIN_TOKEN,
   AUTH_TOKEN,
@@ -32,14 +32,19 @@ import {
 
 // Mock functions
 const mockVerifyToken = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetByClerkUserId = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetByClerkUserId =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockCreateEntity = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockStartKyc = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetKycStatus = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockCreateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockGetFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockActivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockDeactivateFundingAccount = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockCreateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockActivateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockDeactivateFundingAccount =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // Use unstable_mockModule for ESM compatibility
 jest.unstable_mockModule("@clerk/express", () => ({
@@ -98,29 +103,29 @@ describe("Zynk Routes", () => {
       .set("x-auth-token", AUTH_TOKEN);
   }
 
-type EndpointCase = {
-  method: "get" | "post";
-  endpoint: string;
-  mockFn: () => jest.Mock;
-  name: string;
-};
+  type EndpointCase = {
+    method: "get" | "post";
+    endpoint: string;
+    mockFn: () => jest.Mock;
+    name: string;
+  };
 
-function runErrorSuite(
-  title: string,
-  cases: EndpointCase[],
-  errorFactory: () => AppError,
-  expectedStatus: number,
-  messageContains: string
-) {
-  describe.each(cases)(title, ({ method, endpoint, mockFn }) => {
-    it(`should return ${expectedStatus} when ${messageContains}`, async () => {
-      mockFn().mockRejectedValue(errorFactory() as never);
+  function runErrorSuite(
+    title: string,
+    cases: EndpointCase[],
+    errorFactory: () => AppError,
+    expectedStatus: number,
+    messageContains: string
+  ) {
+    describe.each(cases)(title, ({ method, endpoint, mockFn }) => {
+      it(`should return ${expectedStatus} when ${messageContains}`, async () => {
+        mockFn().mockRejectedValue(errorFactory() as never);
 
-      const response = await authRequest(method, endpoint);
-      expectErrorResponse(response, expectedStatus, messageContains);
+        const response = await authRequest(method, endpoint);
+        expectErrorResponse(response, expectedStatus, messageContains);
+      });
     });
-  });
-}
+  }
 
   // ===========================================
   // Admin Middleware Tests (using shared helper)
@@ -131,7 +136,8 @@ function runErrorSuite(
     method: "post",
     adminToken: ADMIN_TOKEN,
     authToken: AUTH_TOKEN,
-    setupSuccessMock: () => mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
+    setupSuccessMock: () =>
+      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
     mockVerifyToken: mockVerifyToken as jest.Mock,
     mockGetByClerkUserId: mockGetByClerkUserId as jest.Mock,
   });
@@ -153,28 +159,108 @@ function runErrorSuite(
   // Parameterized Error Scenarios
   // ===========================================
   const commonErrorCases: EndpointCase[] = [
-    { method: "post", endpoint: "/api/zynk/entities", mockFn: () => mockCreateEntity, name: "entities" },
-    { method: "post", endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
-    { method: "get", endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
-    { method: "post", endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
-    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+    {
+      method: "post",
+      endpoint: "/api/zynk/entities",
+      mockFn: () => mockCreateEntity,
+      name: "entities",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/kyc",
+      mockFn: () => mockStartKyc,
+      name: "kyc",
+    },
+    {
+      method: "get",
+      endpoint: "/api/zynk/kyc/status",
+      mockFn: () => mockGetKycStatus,
+      name: "kyc/status",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account",
+      mockFn: () => mockCreateFundingAccount,
+      name: "funding-account POST",
+    },
+    {
+      method: "get",
+      endpoint: "/api/zynk/funding-account",
+      mockFn: () => mockGetFundingAccount,
+      name: "funding-account GET",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/activate",
+      mockFn: () => mockActivateFundingAccount,
+      name: "activate",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/deactivate",
+      mockFn: () => mockDeactivateFundingAccount,
+      name: "deactivate",
+    },
   ];
 
   const noEntityCases: EndpointCase[] = [
-    { method: "post", endpoint: "/api/zynk/kyc", mockFn: () => mockStartKyc, name: "kyc" },
-    { method: "get", endpoint: "/api/zynk/kyc/status", mockFn: () => mockGetKycStatus, name: "kyc/status" },
-    { method: "post", endpoint: "/api/zynk/funding-account", mockFn: () => mockCreateFundingAccount, name: "funding-account POST" },
-    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+    {
+      method: "post",
+      endpoint: "/api/zynk/kyc",
+      mockFn: () => mockStartKyc,
+      name: "kyc",
+    },
+    {
+      method: "get",
+      endpoint: "/api/zynk/kyc/status",
+      mockFn: () => mockGetKycStatus,
+      name: "kyc/status",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account",
+      mockFn: () => mockCreateFundingAccount,
+      name: "funding-account POST",
+    },
+    {
+      method: "get",
+      endpoint: "/api/zynk/funding-account",
+      mockFn: () => mockGetFundingAccount,
+      name: "funding-account GET",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/activate",
+      mockFn: () => mockActivateFundingAccount,
+      name: "activate",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/deactivate",
+      mockFn: () => mockDeactivateFundingAccount,
+      name: "deactivate",
+    },
   ];
 
   const noFundingCases: EndpointCase[] = [
-    { method: "get", endpoint: "/api/zynk/funding-account", mockFn: () => mockGetFundingAccount, name: "funding-account GET" },
-    { method: "post", endpoint: "/api/zynk/funding-account/activate", mockFn: () => mockActivateFundingAccount, name: "activate" },
-    { method: "post", endpoint: "/api/zynk/funding-account/deactivate", mockFn: () => mockDeactivateFundingAccount, name: "deactivate" },
+    {
+      method: "get",
+      endpoint: "/api/zynk/funding-account",
+      mockFn: () => mockGetFundingAccount,
+      name: "funding-account GET",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/activate",
+      mockFn: () => mockActivateFundingAccount,
+      name: "activate",
+    },
+    {
+      method: "post",
+      endpoint: "/api/zynk/funding-account/deactivate",
+      mockFn: () => mockDeactivateFundingAccount,
+      name: "deactivate",
+    },
   ];
 
   runErrorSuite(
@@ -188,7 +274,11 @@ function runErrorSuite(
   runErrorSuite(
     "$name - No Zynk Entity",
     noEntityCases,
-    () => new AppError(400, "User does not have a Zynk entity. Create entity first."),
+    () =>
+      new AppError(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      ),
     400,
     "Zynk entity"
   );
@@ -196,7 +286,11 @@ function runErrorSuite(
   runErrorSuite(
     "$name - No Funding Account",
     noFundingCases,
-    () => new AppError(400, "User does not have a funding account. Create funding account first."),
+    () =>
+      new AppError(
+        400,
+        "User does not have a funding account. Create funding account first."
+      ),
     400,
     "funding account"
   );
@@ -222,15 +316,33 @@ function runErrorSuite(
     });
 
     it.each([
-      { error: new AppError(400, "User must have an address to create a Zynk entity"), message: "address", desc: "user has no address" },
-      { error: new AppError(400, "User does not have a public key"), message: "public key", desc: "user has no public key" },
-      { error: new AppError(409, "User already has a Zynk entity"), message: "already has", desc: "user already has a Zynk entity" },
-    ])("should return appropriate error when $desc", async ({ error, message }) => {
-      mockCreateEntity.mockRejectedValue(error);
+      {
+        error: new AppError(
+          400,
+          "User must have an address to create a Zynk entity"
+        ),
+        message: "address",
+        desc: "user has no address",
+      },
+      {
+        error: new AppError(400, "User does not have a public key"),
+        message: "public key",
+        desc: "user has no public key",
+      },
+      {
+        error: new AppError(409, "User already has a Zynk entity"),
+        message: "already has",
+        desc: "user already has a Zynk entity",
+      },
+    ])(
+      "should return appropriate error when $desc",
+      async ({ error, message }) => {
+        mockCreateEntity.mockRejectedValue(error);
 
-      const response = await authRequest("post", "/api/zynk/entities");
-      expectErrorResponse(response, error.status, message);
-    });
+        const response = await authRequest("post", "/api/zynk/entities");
+        expectErrorResponse(response, error.status, message);
+      }
+    );
   });
 
   // ===========================================
@@ -280,16 +392,24 @@ function runErrorSuite(
   // ===========================================
   describe("POST /api/zynk/funding-account", () => {
     it("should return 201 on successful funding account creation", async () => {
-      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
+      mockCreateFundingAccount.mockResolvedValue(
+        mockCreateFundingAccountResponse
+      );
 
       const response = await authRequest("post", "/api/zynk/funding-account");
 
-      expectSuccessResponse(response, 201, "Funding account created successfully");
+      expectSuccessResponse(
+        response,
+        201,
+        "Funding account created successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
     it("should call createFundingAccount with correct user ID", async () => {
-      mockCreateFundingAccount.mockResolvedValue(mockCreateFundingAccountResponse);
+      mockCreateFundingAccount.mockResolvedValue(
+        mockCreateFundingAccountResponse
+      );
 
       await authRequest("post", "/api/zynk/funding-account");
       expect(mockCreateFundingAccount).toHaveBeenCalledWith(mockUser.id);
@@ -314,7 +434,11 @@ function runErrorSuite(
 
       const response = await authRequest("get", "/api/zynk/funding-account");
 
-      expectSuccessResponse(response, 200, "Funding account retrieved successfully");
+      expectSuccessResponse(
+        response,
+        200,
+        "Funding account retrieved successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
@@ -333,9 +457,16 @@ function runErrorSuite(
     it("should return 200 on successful activation", async () => {
       mockActivateFundingAccount.mockResolvedValue(mockActivatedFundingAccount);
 
-      const response = await authRequest("post", "/api/zynk/funding-account/activate");
+      const response = await authRequest(
+        "post",
+        "/api/zynk/funding-account/activate"
+      );
 
-      expectSuccessResponse(response, 200, "Funding account activated successfully");
+      expectSuccessResponse(
+        response,
+        200,
+        "Funding account activated successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
@@ -352,16 +483,27 @@ function runErrorSuite(
   // ===========================================
   describe("POST /api/zynk/funding-account/deactivate", () => {
     it("should return 200 on successful deactivation", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
+      mockDeactivateFundingAccount.mockResolvedValue(
+        mockDeactivatedFundingAccount
+      );
 
-      const response = await authRequest("post", "/api/zynk/funding-account/deactivate");
+      const response = await authRequest(
+        "post",
+        "/api/zynk/funding-account/deactivate"
+      );
 
-      expectSuccessResponse(response, 200, "Funding account deactivated successfully");
+      expectSuccessResponse(
+        response,
+        200,
+        "Funding account deactivated successfully"
+      );
       expect(response.body.data).toBeDefined();
     });
 
     it("should call deactivateFundingAccount with correct user ID", async () => {
-      mockDeactivateFundingAccount.mockResolvedValue(mockDeactivatedFundingAccount);
+      mockDeactivateFundingAccount.mockResolvedValue(
+        mockDeactivatedFundingAccount
+      );
 
       await authRequest("post", "/api/zynk/funding-account/deactivate");
       expect(mockDeactivateFundingAccount).toHaveBeenCalledWith(mockUser.id);
@@ -377,7 +519,11 @@ function runErrorSuite(
     method: "post",
     adminToken: ADMIN_TOKEN,
     authToken: AUTH_TOKEN,
-    setupSuccessMock: () => mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
-    setupErrorMock: () => mockCreateEntity.mockRejectedValue(new Error("Database connection failed")),
+    setupSuccessMock: () =>
+      mockCreateEntity.mockResolvedValue(mockCreatedEntityResponse),
+    setupErrorMock: () =>
+      mockCreateEntity.mockRejectedValue(
+        new Error("Database connection failed")
+      ),
   });
 });

@@ -1,9 +1,12 @@
 import crypto from "crypto";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
 import transferRepository from "../repositories/transfer.repository";
-import type { SimulateTransferInput, TransferInput } from "../schemas/transfer.schema";
+import type {
+  SimulateTransferInput,
+  TransferInput,
+} from "../schemas/transfer.schema";
 
 class TransferService {
   async simulateTransfer(userId: string, data: SimulateTransferInput) {
@@ -18,9 +21,13 @@ class TransferService {
     }
 
     // Find user's non-custodial wallet (source account)
-    const sourceAccount = await externalAccountsRepository.findNonCustodialWallet(userId);
+    const sourceAccount =
+      await externalAccountsRepository.findNonCustodialWallet(userId);
     if (!sourceAccount) {
-      throw new AppError(400, "User does not have a wallet. Please create a wallet first.");
+      throw new AppError(
+        400,
+        "User does not have a wallet. Please create a wallet first."
+      );
     }
 
     if (!sourceAccount.zynkExternalAccountId) {
@@ -38,7 +45,10 @@ class TransferService {
 
     // Validate destination is withdrawal type
     if (destinationAccount.type !== "withdrawal") {
-      throw new AppError(400, "Destination account must be a withdrawal type external account");
+      throw new AppError(
+        400,
+        "Destination account must be a withdrawal type external account"
+      );
     }
 
     if (!destinationAccount.zynkExternalAccountId) {

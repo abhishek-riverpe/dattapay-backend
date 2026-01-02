@@ -3,7 +3,7 @@ import type { AuthRequest } from "../middlewares/auth";
 import userService from "../services/user.service";
 import APIResponse from "../lib/APIResponse";
 import { createUserSchema, updateUserSchema } from "../schemas/user.schema";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 class UserController {
   async getAll(req: AuthRequest, res: Response, next: NextFunction) {

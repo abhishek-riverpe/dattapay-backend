@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { NextFunction, Request, Response } from "express";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 function base64UrlDecode(str: string): string {
   const base64 = str.replaceAll("-", "+").replaceAll("_", "/");

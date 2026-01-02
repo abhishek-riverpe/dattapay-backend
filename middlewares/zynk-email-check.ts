@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import zynkRepository from "../repositories/zynk.repository";
-import AppError from "../lib/Error";
+import AppError from "../lib/AppError";
 
 export default async function zynkEmailCheck(
   req: Request,
