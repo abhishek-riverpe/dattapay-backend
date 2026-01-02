@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import express from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import userRepository from "../repositories/user.repository";
 import zynkService from "../services/zynk.service";
 
@@ -46,34 +46,47 @@ function verifyWebhookSignature(
   }
 }
 
-router.post("/webhook", async (req: Request, res: Response) => {
-  const signatureHeader = req.headers["z-webhook-signature"];
-  const secret = process.env.ZYNK_WEBHOOK_SECRET;
+router.post(
+  "/webhook",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const signatureHeader = req.headers["z-webhook-signature"];
+      const secret = process.env.ZYNK_WEBHOOK_SECRET;
 
-  if (!secret) {
-    throw new Error(500, "Webhook secret not configured");
+      if (!secret) {
+        throw new AppError(500, "Webhook secret not configured");
+      }
+
+      if (!signatureHeader || typeof signatureHeader !== "string") {
+        throw new AppError(401, "Missing webhook signature");
+      }
+
+      if (!verifyWebhookSignature(req.body, signatureHeader, secret)) {
+        throw new AppError(401, "Invalid webhook signature");
+      }
+
+      const body: KYCEvent = req.body;
+      if (body.eventCategory !== "kyc") {
+        return res.status(200).send(new APIResponse(true, "Event ignored"));
+      }
+      if (
+        body.eventStatus !== "approved" &&
+        body.eventObject.status !== "approved"
+      ) {
+        return res.status(200).send(new APIResponse(true, "Event ignored"));
+      }
+
+      const user = await userRepository.findByZynkEntityId(
+        body.eventObject.entityId
+      );
+      if (!user) throw new AppError(404, "User not found");
+      await userRepository.update(user.id, { accountStatus: "ACTIVE" });
+      await zynkService.createFundingAccount(user.id);
+      res.status(200).send(new APIResponse(true, "Success"));
+    } catch (error) {
+      next(error);
+    }
   }
-
-  if (!signatureHeader || typeof signatureHeader !== "string") {
-    throw new Error(401, "Missing webhook signature");
-  }
-
-  if (!verifyWebhookSignature(req.body, signatureHeader, secret)) {
-    throw new Error(401, "Invalid webhook signature");
-  }
-
-  const body: KYCEvent = req.body;
-  if (body.eventCategory !== "kyc") return;
-  if (body.eventStatus !== "approved" && body.eventObject.status !== "approved")
-    return;
-
-  const user = await userRepository.findByZynkEntityId(
-    body.eventObject.entityId
-  );
-  if (!user) throw new Error(404, "User not found");
-  await userRepository.update(user.id, { accountStatus: "ACTIVE" });
-  await zynkService.createFundingAccount(user.id);
-  res.status(200).send(new APIResponse(true, "Success"));
-});
+);
 
 export default router;

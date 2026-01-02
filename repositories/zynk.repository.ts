@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 
 interface ZynkEntityData {
   type: string;
@@ -131,7 +131,7 @@ class ZynkRepository {
       if (error instanceof AxiosError && error.response?.status === 404) {
         return false;
       }
-      throw new Error(500, "Failed to check email");
+      throw new AppError(500, "Failed to check email");
     }
   }
 
@@ -149,13 +149,13 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "API request failed");
+        throw new AppError(error.response.status, "API request failed");
       }
 
-      throw new Error(500, "Failed to connect to API");
+      throw new AppError(500, "Failed to connect to API");
     }
   }
 
@@ -163,18 +163,20 @@ class ZynkRepository {
     const routingId = process.env.ZYNK_ROUTING_ID;
 
     if (!routingId) {
-      throw new Error(500, "ZYNK_ROUTING_ID is not configured");
+      throw new AppError(500, "ZYNK_ROUTING_ID is not configured");
     }
 
     try {
       const response = await zynkClient.post<ZynkKycResponse>(
-        `/api/v1/transformer/entity/kyc/${encodeURIComponent(entityId)}/${routingId}`
+        `/api/v1/transformer/entity/kyc/${encodeURIComponent(
+          entityId
+        )}/${routingId}`
       );
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
         if (error.response.status === 404) {
-          throw new Error(404, "Entity not found in Zynk");
+          throw new AppError(404, "Entity not found in Zynk");
         }
 
         const zynkError = error.response.data as ZynkErrorResponse;
@@ -182,13 +184,13 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "KYC request failed");
+        throw new AppError(error.response.status, "KYC request failed");
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -205,13 +207,13 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to get KYC status");
+        throw new AppError(error.response.status, "Failed to get KYC status");
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -221,12 +223,14 @@ class ZynkRepository {
     const jurisdictionId = process.env.ZYNK_JURISDICTION_ID;
 
     if (!jurisdictionId) {
-      throw new Error(500, "ZYNK_JURISDICTION_ID is not configured");
+      throw new AppError(500, "ZYNK_JURISDICTION_ID is not configured");
     }
 
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/create/funding_account/${jurisdictionId}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/create/funding_account/${jurisdictionId}`
       );
       return response.data;
     } catch (error) {
@@ -236,16 +240,16 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to create funding account"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -255,7 +259,9 @@ class ZynkRepository {
   ): Promise<ZynkGetFundingAccountResponse> {
     try {
       const response = await zynkClient.get<ZynkGetFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/funding_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -265,13 +271,16 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(error.response.status, "Failed to get funding account");
+        throw new AppError(
+          error.response.status,
+          "Failed to get funding account"
+        );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -281,7 +290,9 @@ class ZynkRepository {
   ): Promise<ZynkCreateFundingAccountResponse> {
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/activate/funding_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/activate/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -291,16 +302,16 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to activate funding account"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -310,7 +321,9 @@ class ZynkRepository {
   ): Promise<ZynkCreateFundingAccountResponse> {
     try {
       const response = await zynkClient.post<ZynkCreateFundingAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/deactivate/funding_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/deactivate/funding_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -320,48 +333,52 @@ class ZynkRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to deactivate funding account"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
-  async registerPrimaryAuth(entityId: string, publicKey: string): Promise<ZynkErrorResponse> {
+  async registerPrimaryAuth(
+    entityId: string,
+    publicKey: string
+  ): Promise<ZynkErrorResponse> {
     try {
       const response = await zynkClient.post<ZynkErrorResponse>(
         `/api/v1/wallets/${encodeURIComponent(entityId)}/register-auth`,
         {
-          "authType": "API_Key",
-          "authPayload": {
-              "apiKeyName": "Primary Auth",
-              "curveType": "API_KEY_CURVE_P256",
-              "publicKey": publicKey,
-              "expirationSeconds": "31536000" // 1 year
-          }
-      }
+          authType: "API_Key",
+          authPayload: {
+            apiKeyName: "Primary Auth",
+            curveType: "API_KEY_CURVE_P256",
+            publicKey: publicKey,
+            expirationSeconds: "31536000", // 1 year
+          },
+        }
       );
       return response.data;
-    }
-    catch (error) {
+    } catch (error) {
       if (error instanceof AxiosError && error.response) {
         const zynkError = error.response.data as ZynkErrorResponse;
-        throw new Error(zynkError.error.code, zynkError.error.message);
+        throw new AppError(zynkError.error.code, zynkError.error.message);
       }
       if (error instanceof AxiosError) {
-        throw new Error(error.response?.status || 500, "Failed to connect to Zynk API");
+        throw new AppError(
+          error.response?.status || 500,
+          "Failed to connect to Zynk API"
+        );
       }
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 }
-
 
 export default new ZynkRepository();
 export type {

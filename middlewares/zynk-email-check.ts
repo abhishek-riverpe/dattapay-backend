@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import zynkRepository from "../repositories/zynk.repository";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 
 export default async function zynkEmailCheck(
   req: Request,
@@ -17,7 +17,7 @@ export default async function zynkEmailCheck(
     const emailExists = await zynkRepository.checkEmailExists(email);
 
     if (emailExists) {
-      throw new Error(409, "Please use a different email address for now.");
+      throw new AppError(409, "Please use a different email address for now.");
     }
 
     next();

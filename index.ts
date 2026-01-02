@@ -4,6 +4,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import logger from "./lib/logger";
+import prismaClient from "./lib/prisma-client";
 import admin from "./middlewares/admin";
 
 import error from "./middlewares/error";
@@ -90,6 +91,33 @@ app.use(error);
 
 const port = process.env.PORT || 7000;
 
-app.listen(port, () =>
+const server = app.listen(port, () =>
   logger.info(`Server running on http://localhost:${port}`)
 );
+
+// Graceful shutdown handling
+async function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received. Shutting down gracefully...`);
+
+  server.close(async () => {
+    logger.info("HTTP server closed.");
+
+    try {
+      await prismaClient.$disconnect();
+      logger.info("Database connections closed.");
+      process.exit(0);
+    } catch (error) {
+      logger.error("Error during shutdown:", error);
+      process.exit(1);
+    }
+  });
+
+  // Force exit after 10 seconds if graceful shutdown fails
+  setTimeout(() => {
+    logger.error("Forced shutdown after timeout.");
+    process.exit(1);
+  }, 10000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

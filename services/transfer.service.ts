@@ -1,30 +1,37 @@
 import crypto from "crypto";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
 import transferRepository from "../repositories/transfer.repository";
-import type { SimulateTransferInput, TransferInput } from "../schemas/transfer.schema";
+import type {
+  SimulateTransferInput,
+  TransferInput,
+} from "../schemas/transfer.schema";
 
 class TransferService {
   async simulateTransfer(userId: string, data: SimulateTransferInput) {
     // Get user and validate zynkEntityId
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User must complete KYC before making transfers");
+      throw new AppError(400, "User must complete KYC before making transfers");
     }
 
     // Find user's non-custodial wallet (source account)
-    const sourceAccount = await externalAccountsRepository.findNonCustodialWallet(userId);
+    const sourceAccount =
+      await externalAccountsRepository.findNonCustodialWallet(userId);
     if (!sourceAccount) {
-      throw new Error(400, "User does not have a wallet. Please create a wallet first.");
+      throw new AppError(
+        400,
+        "User does not have a wallet. Please create a wallet first."
+      );
     }
 
     if (!sourceAccount.zynkExternalAccountId) {
-      throw new Error(400, "Source wallet is not properly configured");
+      throw new AppError(400, "Source wallet is not properly configured");
     }
 
     // Find destination external account
@@ -33,16 +40,19 @@ class TransferService {
       userId
     );
     if (!destinationAccount) {
-      throw new Error(404, "Destination external account not found");
+      throw new AppError(404, "Destination external account not found");
     }
 
     // Validate destination is withdrawal type
     if (destinationAccount.type !== "withdrawal") {
-      throw new Error(400, "Destination account must be a withdrawal type external account");
+      throw new AppError(
+        400,
+        "Destination account must be a withdrawal type external account"
+      );
     }
 
     if (!destinationAccount.zynkExternalAccountId) {
-      throw new Error(400, "Destination account is not properly configured");
+      throw new AppError(400, "Destination account is not properly configured");
     }
 
     // Generate transaction ID

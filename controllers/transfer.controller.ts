@@ -1,9 +1,12 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { AuthRequest } from "../middlewares/auth";
 import transferService from "../services/transfer.service";
-import { simulateTransferSchema, transferSchema } from "../schemas/transfer.schema";
+import {
+  simulateTransferSchema,
+  transferSchema,
+} from "../schemas/transfer.schema";
 
 class TransferController {
   async simulateTransfer(req: AuthRequest, res: Response, next: NextFunction) {
@@ -13,7 +16,7 @@ class TransferController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const result = await transferService.simulateTransfer(req.user.id, value);
@@ -33,14 +36,18 @@ class TransferController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const result = await transferService.transfer(value);
 
       res
         .status(200)
-        .json(new APIResponse(true, result.message, { executionId: result.executionId }));
+        .json(
+          new APIResponse(true, result.message, {
+            executionId: result.executionId,
+          })
+        );
     } catch (error) {
       next(error);
     }

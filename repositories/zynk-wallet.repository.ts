@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 
 // ============================================
 // Request/Response Interfaces
@@ -154,30 +154,32 @@ class ZynkWalletRepository {
       const zynkError = error.response.data as ZynkErrorResponse;
 
       if (zynkError?.error) {
-        const errorMessage =
-          zynkError.error.details || zynkError.error.message;
-        throw new Error(zynkError.error.code, errorMessage);
+        const errorMessage = zynkError.error.details || zynkError.error.message;
+        throw new AppError(zynkError.error.code, errorMessage);
       }
 
-      throw new Error(error.response.status, defaultMessage);
+      throw new AppError(error.response.status, defaultMessage);
     }
 
-    throw new Error(500, "Failed to connect to Zynk API");
+    throw new AppError(500, "Failed to connect to Zynk API");
   }
 
   /**
    * Register email-based authentication with Zynk
    * This automatically initiates OTP
    */
-  async registerAuth(entityId: string, email: string): Promise<RegisterAuthResponse> {
+  async registerAuth(
+    entityId: string,
+    email: string
+  ): Promise<RegisterAuthResponse> {
     try {
       const response = await zynkClient.post<RegisterAuthResponse>(
         `/api/v1/wallets/${entityId}/register-auth`,
         {
           authType: "Email_Auth",
           authPayload: {
-            email: email
-          }
+            email: email,
+          },
         }
       );
       return response.data;
@@ -247,7 +249,9 @@ class ZynkWalletRepository {
    * Submit account creation with signature
    * POST /api/v1/wallets/accounts/submit
    */
-  async submitAccount(data: SubmitAccountRequest): Promise<SubmitAccountResponse> {
+  async submitAccount(
+    data: SubmitAccountRequest
+  ): Promise<SubmitAccountResponse> {
     try {
       const response = await zynkClient.post<SubmitAccountResponse>(
         `/api/v1/wallets/accounts/submit`,
@@ -273,7 +277,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet not found");
+        throw new AppError(404, "Wallet not found");
       }
       this.handleError(error, "Failed to get wallet details");
     }
@@ -290,7 +294,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet not found");
+        throw new AppError(404, "Wallet not found");
       }
       this.handleError(error, "Failed to get wallet balances");
     }
@@ -318,7 +322,7 @@ class ZynkWalletRepository {
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
-        throw new Error(404, "Wallet or address not found");
+        throw new AppError(404, "Wallet or address not found");
       }
       this.handleError(error, "Failed to get transactions");
     }

@@ -1,4 +1,4 @@
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import zynkRepository from "../repositories/zynk.repository";
@@ -9,15 +9,18 @@ class ZynkService {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.address) {
-      throw new Error(400, "User must have an address to create a Zynk entity");
+      throw new AppError(
+        400,
+        "User must have an address to create a Zynk entity"
+      );
     }
 
     if (!user.publicKey) {
-      throw new Error(400, "User does not have a public key");
+      throw new AppError(400, "User does not have a public key");
     }
 
     const entityData: ZynkEntityData = {
@@ -51,11 +54,11 @@ class ZynkService {
       });
 
       if (!currentUser) {
-        throw new Error(404, "User not found");
+        throw new AppError(404, "User not found");
       }
 
       if (currentUser.zynkEntityId) {
-        throw new Error(409, "User already has a Zynk entity");
+        throw new AppError(409, "User already has a Zynk entity");
       }
 
       return tx.user.update({
@@ -68,18 +71,21 @@ class ZynkService {
       });
     });
 
-    await zynkRepository.registerPrimaryAuth(response.data.entityId, user.publicKey);
+    await zynkRepository.registerPrimaryAuth(
+      response.data.entityId,
+      user.publicKey
+    );
     return updatedUser;
   }
 
   async startKyc(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
@@ -93,11 +99,11 @@ class ZynkService {
   async getKycStatus(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
@@ -112,11 +118,11 @@ class ZynkService {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
@@ -135,11 +141,11 @@ class ZynkService {
       });
 
       if (!currentUser) {
-        throw new Error(404, "User not found");
+        throw new AppError(404, "User not found");
       }
 
       if (currentUser.zynkFundingAccountId) {
-        throw new Error(409, "User already has a funding account");
+        throw new AppError(409, "User already has a funding account");
       }
 
       return tx.user.update({
@@ -158,18 +164,18 @@ class ZynkService {
   async getFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a funding account. Create funding account first."
       );
@@ -186,18 +192,18 @@ class ZynkService {
   async activateFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a funding account. Create funding account first."
       );
@@ -214,18 +220,18 @@ class ZynkService {
   async deactivateFundingAccount(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a Zynk entity. Create entity first."
       );
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(
+      throw new AppError(
         400,
         "User does not have a funding account. Create funding account first."
       );
@@ -242,21 +248,26 @@ class ZynkService {
   async registerPrimaryAuth(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User does not have a Zynk entity. Create entity first.");
+      throw new AppError(
+        400,
+        "User does not have a Zynk entity. Create entity first."
+      );
     }
 
     if (!user.publicKey) {
-      throw new Error(400, "User does not have a public key");
+      throw new AppError(400, "User does not have a public key");
     }
-  
-    const response = await zynkRepository.registerPrimaryAuth(user.zynkEntityId, user.publicKey);
+
+    const response = await zynkRepository.registerPrimaryAuth(
+      user.zynkEntityId,
+      user.publicKey
+    );
     return response;
   }
-
 }
 
 export default new ZynkService();

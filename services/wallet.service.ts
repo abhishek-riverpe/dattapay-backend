@@ -1,4 +1,4 @@
-import CustomError from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import walletRepository from "../repositories/wallet.repository";
@@ -6,29 +6,37 @@ import zynkWalletRepository from "../repositories/zynk-wallet.repository";
 import externalAccountsService from "./external-accounts.service";
 
 class WalletService {
-
   async prepareWallet(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new CustomError(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new CustomError(400, "User must complete KYC before creating a wallet");
+      throw new AppError(
+        400,
+        "User must complete KYC before creating a wallet"
+      );
     }
 
     const existingWallet = await walletRepository.findWalletByUserId(userId);
     if (existingWallet) {
-      throw new CustomError(400, "User already has a wallet");
+      throw new AppError(400, "User already has a wallet");
     }
 
     const prepareWalletResponse = await zynkWalletRepository.prepareWallet(
       user.zynkEntityId,
-      { walletName: "My Wallet", chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA" }
+      {
+        walletName: "My Wallet",
+        chain: process.env.DEFAULT_WALLET_CHAIN || "SOLANA",
+      }
     );
 
-    if (!prepareWalletResponse.data.payloadId || !prepareWalletResponse.data.payloadToSign) {
-      throw new CustomError(500, "Failed to prepare wallet creation");
+    if (
+      !prepareWalletResponse.data.payloadId ||
+      !prepareWalletResponse.data.payloadToSign
+    ) {
+      throw new AppError(500, "Failed to prepare wallet creation");
     }
 
     return {
@@ -41,11 +49,14 @@ class WalletService {
     // Initial validation
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new CustomError(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new CustomError(400, "User must complete KYC before creating a wallet");
+      throw new AppError(
+        400,
+        "User must complete KYC before creating a wallet"
+      );
     }
 
     // Call external API first (cannot be rolled back)
@@ -54,8 +65,11 @@ class WalletService {
       signature,
     });
 
-    if (!submitWalletResponse.data.walletId || submitWalletResponse.data.addresses.length === 0) {
-      throw new CustomError(500, "Wallet creation failed");
+    if (
+      !submitWalletResponse.data.walletId ||
+      submitWalletResponse.data.addresses.length === 0
+    ) {
+      throw new AppError(500, "Wallet creation failed");
     }
 
     // Wrap check + create in transaction to prevent race conditions
@@ -65,7 +79,7 @@ class WalletService {
       });
 
       if (existingWallet) {
-        throw new CustomError(400, "User already has a wallet");
+        throw new AppError(400, "User already has a wallet");
       }
 
       return tx.wallet.create({
@@ -83,11 +97,14 @@ class WalletService {
   async prepareAccount(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     if (wallet.account) {
-      throw new CustomError(400, "Wallet already has an account");
+      throw new AppError(400, "Wallet already has an account");
     }
 
     const response = await zynkWalletRepository.prepareAccount(
@@ -96,7 +113,7 @@ class WalletService {
     );
 
     if (!response.data.payloadId || !response.data.payloadToSign) {
-      throw new CustomError(500, "Failed to prepare account creation");
+      throw new AppError(500, "Failed to prepare account creation");
     }
 
     return {
@@ -109,7 +126,10 @@ class WalletService {
     // Initial validation
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     // Call external API first (cannot be rolled back)
@@ -119,7 +139,7 @@ class WalletService {
     });
 
     if (!response.data.account?.address) {
-      throw new CustomError(500, "Account creation failed");
+      throw new AppError(500, "Account creation failed");
     }
 
     // Wrap check + create in transaction to prevent race conditions
@@ -130,11 +150,11 @@ class WalletService {
       });
 
       if (!existingWallet) {
-        throw new CustomError(404, "Wallet not found");
+        throw new AppError(404, "Wallet not found");
       }
 
       if (existingWallet.account) {
-        throw new CustomError(400, "Wallet already has an account");
+        throw new AppError(400, "Wallet already has an account");
       }
 
       return tx.walletAccount.create({
@@ -168,7 +188,10 @@ class WalletService {
   async getWallet(userId: string) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     return wallet;
@@ -180,11 +203,14 @@ class WalletService {
   ) {
     const wallet = await walletRepository.findWalletByUserId(userId);
     if (!wallet) {
-      throw new CustomError(404, "Wallet not found. Please create a wallet first.");
+      throw new AppError(
+        404,
+        "Wallet not found. Please create a wallet first."
+      );
     }
 
     if (!wallet.account) {
-      throw new CustomError(404, "Wallet account not found");
+      throw new AppError(404, "Wallet account not found");
     }
 
     const response = await zynkWalletRepository.getTransactions(

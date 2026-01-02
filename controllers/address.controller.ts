@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { AuthRequest } from "../middlewares/auth";
 import {
   createAddressSchema,
@@ -30,7 +30,7 @@ class AddressController {
       );
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const address = await addressService.create(value);
@@ -48,7 +48,7 @@ class AddressController {
         updateAddressSchema.validate(req.body, { abortEarly: false });
 
       if (bodyError) {
-        throw new Error(
+        throw new AppError(
           400,
           bodyError.details.map((d) => d.message).join(", ")
         );

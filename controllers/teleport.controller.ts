@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { AuthRequest } from "../middlewares/auth";
 import teleportService from "../services/teleport.service";
 import {
@@ -16,7 +16,7 @@ class TeleportController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const teleport = await teleportService.create(req.user.id, value);
@@ -50,7 +50,7 @@ class TeleportController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const teleport = await teleportService.update(req.user.id, value);

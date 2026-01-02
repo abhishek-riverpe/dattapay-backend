@@ -1,4 +1,4 @@
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import addressRepository from "../repositories/address.repository";
 import type {
@@ -14,7 +14,7 @@ class AddressService {
   async getById(id: string) {
     const address = await addressRepository.findById(id);
     if (!address) {
-      throw new Error(404, "Address not found");
+      throw new AppError(404, "Address not found");
     }
     return address;
   }
@@ -22,7 +22,7 @@ class AddressService {
   async getByUserId(userId: string) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
-      throw new Error(404, "Address not found for this user");
+      throw new AppError(404, "Address not found for this user");
     }
     return address;
   }
@@ -34,7 +34,7 @@ class AddressService {
       });
 
       if (!user) {
-        throw new Error(404, "User not found");
+        throw new AppError(404, "User not found");
       }
 
       const existingAddress = await tx.address.findUnique({
@@ -42,7 +42,7 @@ class AddressService {
       });
 
       if (existingAddress) {
-        throw new Error(409, "User already has an address");
+        throw new AppError(409, "User already has an address");
       }
 
       return tx.address.create({
@@ -55,7 +55,7 @@ class AddressService {
   async update(id: string, data: UpdateAddressInput) {
     const address = await addressRepository.findById(id);
     if (!address) {
-      throw new Error(404, "Address not found");
+      throw new AppError(404, "Address not found");
     }
     return addressRepository.update(id, data);
   }
@@ -63,7 +63,7 @@ class AddressService {
   async updateByUserId(userId: string, data: UpdateAddressInput) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
-      throw new Error(404, "Address not found for this user");
+      throw new AppError(404, "Address not found for this user");
     }
     return addressRepository.updateByUserId(userId, data);
   }
@@ -71,7 +71,7 @@ class AddressService {
   async delete(id: string) {
     const address = await addressRepository.findById(id);
     if (!address) {
-      throw new Error(404, "Address not found");
+      throw new AppError(404, "Address not found");
     }
     return addressRepository.delete(id);
   }
@@ -79,7 +79,7 @@ class AddressService {
   async deleteByUserId(userId: string) {
     const address = await addressRepository.findByUserId(userId);
     if (!address) {
-      throw new Error(404, "Address not found for this user");
+      throw new AppError(404, "Address not found for this user");
     }
     return addressRepository.deleteByUserId(userId);
   }

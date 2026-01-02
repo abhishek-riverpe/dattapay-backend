@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import prismaClient from "../lib/prisma-client";
 import zynkClient from "../lib/zynk-client";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { ExternalAccountStatus } from "../generated/prisma/client";
 
 // ============================================
@@ -152,7 +152,7 @@ class ExternalAccountsRepository {
     const jurisdictionId = process.env.SOLANA_JURISDICTION_ID;
 
     if (!jurisdictionId) {
-      throw new Error(500, "SOLANA_JURISDICTION_ID is not configured");
+      throw new AppError(500, "SOLANA_JURISDICTION_ID is not configured");
     }
 
     const payload: ZynkExternalAccountData = {
@@ -167,7 +167,9 @@ class ExternalAccountsRepository {
 
     try {
       const response = await zynkClient.post<ZynkExternalAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/add/external_account`,
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/add/external_account`,
         payload
       );
       return response.data;
@@ -178,16 +180,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to create external account in Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -197,7 +199,9 @@ class ExternalAccountsRepository {
   ): Promise<ZynkGetExternalAccountResponse> {
     try {
       const response = await zynkClient.get<ZynkGetExternalAccountResponse>(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/external_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/external_account/${encodeURIComponent(accountId)}`
       );
       return response.data;
     } catch (error) {
@@ -207,16 +211,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to get external account from Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 
@@ -226,7 +230,9 @@ class ExternalAccountsRepository {
   ): Promise<void> {
     try {
       await zynkClient.delete(
-        `/api/v1/transformer/accounts/${encodeURIComponent(entityId)}/delete/external_account/${encodeURIComponent(accountId)}`
+        `/api/v1/transformer/accounts/${encodeURIComponent(
+          entityId
+        )}/delete/external_account/${encodeURIComponent(accountId)}`
       );
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
@@ -235,16 +241,16 @@ class ExternalAccountsRepository {
         if (zynkError?.error) {
           const errorMessage =
             zynkError.error.details || zynkError.error.message;
-          throw new Error(zynkError.error.code, errorMessage);
+          throw new AppError(zynkError.error.code, errorMessage);
         }
 
-        throw new Error(
+        throw new AppError(
           error.response.status,
           "Failed to delete external account from Zynk"
         );
       }
 
-      throw new Error(500, "Failed to connect to Zynk API");
+      throw new AppError(500, "Failed to connect to Zynk API");
     }
   }
 }

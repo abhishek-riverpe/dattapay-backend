@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import APIResponse from "../lib/APIResponse";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import type { AuthRequest } from "../middlewares/auth";
 import externalAccountsService from "../services/external-accounts.service";
 import {
@@ -16,7 +16,7 @@ class ExternalAccountsController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const externalAccount = await externalAccountsService.create(
@@ -63,7 +63,7 @@ class ExternalAccountsController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       const externalAccount = await externalAccountsService.getById(
@@ -92,7 +92,7 @@ class ExternalAccountsController {
       });
 
       if (error) {
-        throw new Error(400, error.details.map((d) => d.message).join(", "));
+        throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
       await externalAccountsService.delete(req.user.id, value.id);

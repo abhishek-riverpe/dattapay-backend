@@ -4,7 +4,7 @@ import type {
   ErrorRequestHandler,
   NextFunction,
 } from "express";
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import APIResponse from "../lib/APIResponse";
 
 const error = (
@@ -14,7 +14,7 @@ const error = (
   next: NextFunction
 ) => {
   console.error(err);
-  if (err instanceof Error)
+  if (err instanceof AppError)
     return res.status(err.status).send(new APIResponse(false, err.message));
   return res.status(500).send(new APIResponse(false, "Internal server error"));
 };

@@ -1,23 +1,29 @@
-import Error from "../lib/Error";
+import AppError from "../lib/AppError";
 import prismaClient from "../lib/prisma-client";
 import userRepository from "../repositories/user.repository";
 import externalAccountsRepository from "../repositories/external-accounts.repository";
 import teleportRepository from "../repositories/teleport.repository";
-import type { CreateTeleportInput, UpdateTeleportInput } from "../schemas/teleport.schema";
+import type {
+  CreateTeleportInput,
+  UpdateTeleportInput,
+} from "../schemas/teleport.schema";
 
 class TeleportService {
-  private async validateAndCallZynkApi(userId: string, externalAccountId: string) {
+  private async validateAndCallZynkApi(
+    userId: string,
+    externalAccountId: string
+  ) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     if (!user.zynkEntityId) {
-      throw new Error(400, "User must have a Zynk entity");
+      throw new AppError(400, "User must have a Zynk entity");
     }
 
     if (!user.zynkFundingAccountId) {
-      throw new Error(400, "User must have a funding account");
+      throw new AppError(400, "User must have a funding account");
     }
 
     const externalAccount = await externalAccountsRepository.findById(
@@ -26,11 +32,11 @@ class TeleportService {
     );
 
     if (!externalAccount) {
-      throw new Error(404, "External account not found");
+      throw new AppError(404, "External account not found");
     }
 
     if (!externalAccount.zynkExternalAccountId) {
-      throw new Error(400, "External account not registered with Zynk");
+      throw new AppError(400, "External account not registered with Zynk");
     }
 
     const zynkResponse = await teleportRepository.createTeleportInZynk(
@@ -42,7 +48,10 @@ class TeleportService {
   }
 
   async create(userId: string, data: CreateTeleportInput) {
-    const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
+    const zynkResponse = await this.validateAndCallZynkApi(
+      userId,
+      data.externalAccountId
+    );
 
     return prismaClient.$transaction(async (tx) => {
       const existingTeleport = await tx.teleport.findUnique({
@@ -50,7 +59,7 @@ class TeleportService {
       });
 
       if (existingTeleport) {
-        throw new Error(409, "User already has a teleport");
+        throw new AppError(409, "User already has a teleport");
       }
 
       return tx.teleport.create({
@@ -67,19 +76,22 @@ class TeleportService {
   async get(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new Error(404, "User not found");
+      throw new AppError(404, "User not found");
     }
 
     const teleport = await teleportRepository.findByUserId(userId);
     if (!teleport) {
-      throw new Error(404, "Teleport not found");
+      throw new AppError(404, "Teleport not found");
     }
 
     return teleport;
   }
 
   async update(userId: string, data: UpdateTeleportInput) {
-    const zynkResponse = await this.validateAndCallZynkApi(userId, data.externalAccountId);
+    const zynkResponse = await this.validateAndCallZynkApi(
+      userId,
+      data.externalAccountId
+    );
 
     return prismaClient.$transaction(async (tx) => {
       const existingTeleport = await tx.teleport.findUnique({
@@ -87,7 +99,7 @@ class TeleportService {
       });
 
       if (!existingTeleport) {
-        throw new Error(404, "Teleport not found");
+        throw new AppError(404, "Teleport not found");
       }
 
       return tx.teleport.update({
