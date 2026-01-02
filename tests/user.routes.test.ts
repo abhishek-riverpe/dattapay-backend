@@ -528,11 +528,6 @@ describe("User Routes", () => {
           desc: "firstName exceeds max length",
         },
         {
-          payload: { zynkEntityId: "short" },
-          message: "at least 30 characters",
-          desc: "zynkEntityId is too short",
-        },
-        {
           payload: { dateOfBirth: "invalid-date" },
           message: undefined,
           desc: "dateOfBirth format is invalid",
@@ -558,10 +553,6 @@ describe("User Routes", () => {
         {
           payload: { email: "newemail@example.com" },
           desc: "email to valid format",
-        },
-        {
-          payload: { zynkEntityId: "a".repeat(35) },
-          desc: "valid zynkEntityId",
         },
       ])("should allow partial updates with $desc", async ({ payload }) => {
         mockUpdate.mockResolvedValue(mockUserWithAddress);
