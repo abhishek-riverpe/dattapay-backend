@@ -329,6 +329,7 @@ describe("Transfer Routes", () => {
         );
 
         expect(mockTransfer).toHaveBeenCalledWith(
+          mockUser.id,
           expect.objectContaining({
             executionId: validTransferPayload.executionId,
             signature: validTransferPayload.signature,

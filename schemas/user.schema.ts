@@ -82,12 +82,6 @@ export const updateUserSchema = Joi.object({
     "string.max": "Phone number cannot exceed 20 characters",
   }),
 
-  zynkEntityId: Joi.string().min(30).max(50).messages({
-    "string.empty": "Zynk entity id cannot be empty",
-    "string.min": "Zynk entity id must be at least 30 characters",
-    "string.max": "Zynk entity id cannot exceed 100 characters",
-  }),
-
   nationality: Joi.string().min(1).max(100).messages({
     "string.empty": "Nationality cannot be empty",
     "string.max": "Nationality cannot exceed 100 characters",
@@ -123,7 +117,11 @@ export type CreateUserInput = {
   dateOfBirth: Date;
 };
 
-export type UpdateUserInput = Partial<CreateUserInput> & {
+// Public API type - excludes sensitive fields that should only be updated server-side
+export type UpdateUserInput = Partial<CreateUserInput>;
+
+// Internal type for server-side updates (includes sensitive fields)
+export type InternalUpdateUserInput = Partial<CreateUserInput> & {
   zynkEntityId?: string;
   accountStatus?: AccountStatus;
 };

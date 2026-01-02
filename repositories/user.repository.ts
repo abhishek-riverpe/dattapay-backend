@@ -1,5 +1,5 @@
 import prismaClient from "../lib/prisma-client";
-import type { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
+import type { CreateUserInput, InternalUpdateUserInput } from "../schemas/user.schema";
 
 class UserRepository {
   async findAll() {
@@ -43,7 +43,7 @@ class UserRepository {
     });
   }
 
-  async update(id: string, data: UpdateUserInput) {
+  async update(id: string, data: InternalUpdateUserInput) {
     return prismaClient.user.update({
       where: { id },
       data,
