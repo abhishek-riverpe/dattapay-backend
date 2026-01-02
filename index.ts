@@ -102,6 +102,13 @@ const externalAccountsRateLimiter = rateLimit({
   message: { success: false, message: "Too many requests. Please try again later." },
 });
 
+// Webhook rate limiter - stricter to prevent abuse
+const webhookRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (reasonable for webhooks)
+  message: { success: false, message: "Too many webhook requests. Please try again later." },
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -109,6 +116,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/transfer", financialRateLimiter);
 app.use("/api/zynk", zynkRateLimiter);
 app.use("/api/external-accounts", externalAccountsRateLimiter);
+
+// Apply webhook rate limiter before webhook routes
+app.use("/api/webhook", webhookRateLimiter);
 
 app.use("/api", webhooks);
 app.use("/api", admin, router);
