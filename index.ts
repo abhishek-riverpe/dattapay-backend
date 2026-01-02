@@ -26,10 +26,19 @@ const REQUIRED_ENV_VARS = [
   "ZYNK_JURISDICTION_ID",
 ] as const;
 
-const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
-if (missingVars.length > 0) {
-  logger.error(`Missing required environment variables: ${missingVars.join(", ")}`);
-  process.exit(1);
+// Only validate in production - development can run with partial config
+if (process.env.NODE_ENV === "production") {
+  const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+  if (missingVars.length > 0) {
+    logger.error(`Missing required environment variables: ${missingVars.join(", ")}`);
+    process.exit(1);
+  }
+} else if (process.env.NODE_ENV !== "test") {
+  // Warn in development but don't exit
+  const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+  if (missingVars.length > 0) {
+    logger.warn(`Missing environment variables (required in production): ${missingVars.join(", ")}`);
+  }
 }
 
 const app = express();
@@ -98,7 +107,7 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: process.env.NODE_ENV === "production" ? 100 : 1000,
   })
 );
 

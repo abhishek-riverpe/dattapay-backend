@@ -11,8 +11,8 @@ export const sha256 = async (input: string): Promise<string> => {
 
 // Base64URL encoding for strings
 export const toBase64Url = (str: string): string => {
-  let b64 = btoa(unescape(encodeURIComponent(str)));
-  b64 = b64.replace(/\+/g, "-").replace(/\//g, "_");
+  let b64 = Buffer.from(str, "utf-8").toString("base64");
+  b64 = b64.replaceAll("+", "-").replaceAll("/", "_");
   while (b64.endsWith("=")) {
     b64 = b64.slice(0, -1);
   }

@@ -14,15 +14,7 @@ const error = (
   res: ExpressResponse,
   next: NextFunction
 ) => {
-  // Use structured logger instead of console.error
-  if (err instanceof AppError) {
-    // Log application errors at warn level (expected errors)
-    logger.warn("Application error", {
-      status: err.status,
-      message: err.message,
-      path: req.path,
-      method: req.method,
-    });
+  if (err instanceof AppError)
     return res.status(err.status).send(new APIResponse(false, err.message));
   }
 
