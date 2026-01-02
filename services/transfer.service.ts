@@ -8,6 +8,24 @@ import type {
   TransferInput,
 } from "../schemas/transfer.schema";
 
+// In-memory cache for executionId→userId mapping with TTL
+// Entries expire after 30 minutes (Zynk validUntil is typically shorter)
+const EXECUTION_CACHE_TTL_MS = 30 * 60 * 1000;
+const executionOwnershipCache = new Map<
+  string,
+  { userId: string; expiresAt: number }
+>();
+
+// Cleanup expired entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of executionOwnershipCache) {
+    if (value.expiresAt < now) {
+      executionOwnershipCache.delete(key);
+    }
+  }
+}, 5 * 60 * 1000); // Run cleanup every 5 minutes
+
 class TransferService {
   async simulateTransfer(userId: string, data: SimulateTransferInput) {
     // Get user and validate zynkEntityId
@@ -74,6 +92,12 @@ class TransferService {
       depositMemo: data.depositMemo,
     });
 
+    // Store executionId→userId mapping for ownership validation
+    executionOwnershipCache.set(response.data.executionId, {
+      userId,
+      expiresAt: Date.now() + EXECUTION_CACHE_TTL_MS,
+    });
+
     return {
       executionId: response.data.executionId,
       payloadToSign: response.data.payloadToSign,
@@ -82,7 +106,23 @@ class TransferService {
     };
   }
 
-  async transfer(data: TransferInput) {
+  async transfer(userId: string, data: TransferInput) {
+    // Validate that the user owns this executionId
+    const ownership = executionOwnershipCache.get(data.executionId);
+    if (!ownership) {
+      throw new AppError(400, "Invalid or expired execution ID");
+    }
+
+    if (ownership.userId !== userId) {
+      throw new AppError(403, "You do not have permission to execute this transfer");
+    }
+
+    // Check if expired
+    if (ownership.expiresAt < Date.now()) {
+      executionOwnershipCache.delete(data.executionId);
+      throw new AppError(400, "Transfer execution has expired");
+    }
+
     // Call Zynk transfer API
     const response = await transferRepository.executeTransfer({
       executionId: data.executionId,
@@ -90,6 +130,9 @@ class TransferService {
       transferAcknowledgement: "true",
       signatureType: "ApiKey",
     });
+
+    // Remove from cache after successful execution
+    executionOwnershipCache.delete(data.executionId);
 
     return {
       executionId: response.data.executionId,

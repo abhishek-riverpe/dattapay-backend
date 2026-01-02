@@ -39,7 +39,7 @@ class TransferController {
         throw new AppError(400, error.details.map((d) => d.message).join(", "));
       }
 
-      const result = await transferService.transfer(value);
+      const result = await transferService.transfer(req.user.id, value);
 
       res
         .status(200)
