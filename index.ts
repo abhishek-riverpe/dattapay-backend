@@ -140,6 +140,14 @@ app.use("/api/external-accounts", externalAccountsRateLimiter);
 // Apply webhook rate limiter before webhook routes
 app.use("/api/webhook", webhookRateLimiter);
 
+// Health check endpoint (no auth required)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use("/api", webhooks);
 app.use("/api", admin, router);
 app.use(error);
