@@ -28,7 +28,7 @@ class ZynkService {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      phoneNumberPrefix: user.phoneNumberPrefix,
+      phoneNumberPrefix: user.phoneNumberPrefix.replace("+", ""),
       phoneNumber: user.phoneNumber,
       nationality: user.nationality,
       dateOfBirth: user.dateOfBirth.toISOString().split("T")[0] as string,
